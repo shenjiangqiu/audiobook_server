@@ -30,6 +30,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Music::AuthorId).integer().not_null())
                     .col(ColumnDef::new(Music::Name).string().not_null().unique_key())
                     .col(ColumnDef::new(Music::Chapters).integer().not_null())
+                    .col(ColumnDef::new(Music::FileFolder).string().not_null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_music_author_id")
@@ -59,4 +60,5 @@ pub enum Music {
     AuthorId,
     Name,
     Chapters,
+    FileFolder,
 }

@@ -3,25 +3,25 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "account")]
+#[sea_orm(table_name = "author")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
+    pub avatar: String,
     #[sea_orm(unique)]
     pub name: String,
-    pub password: String,
-    pub role_level: i32,
+    pub description: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::progress::Entity")]
-    Progress,
+    #[sea_orm(has_many = "super::music::Entity")]
+    Music,
 }
 
-impl Related<super::progress::Entity> for Entity {
+impl Related<super::music::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Progress.def()
+        Relation::Music.def()
     }
 }
 

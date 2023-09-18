@@ -32,6 +32,7 @@ impl MigrationTrait for Migration {
                             .unique_key(),
                     )
                     .col(ColumnDef::new(Account::Password).string().not_null())
+                    .col(ColumnDef::new(Account::RoleLevel).integer().not_null())
                     .to_owned(),
             )
             .await?;
@@ -54,4 +55,5 @@ pub enum Account {
     Id,
     Name,
     Password,
+    RoleLevel,
 }

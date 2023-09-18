@@ -3,5 +3,6 @@
 pub mod prelude;
 
 pub mod account;
+pub mod author;
 pub mod music;
 pub mod progress;
