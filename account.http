@@ -1,0 +1,21 @@
+GET http://localhost:3000/account
+
+POST http://localhost:3000/account
+Content-Type:application/json
+
+{
+    "username": "test",
+    "password": "test"
+}
+
+POST http://localhost:3000/account/login
+Content-Type: application/json
+
+{
+    "username": "test",
+    "password": "test"
+}
+
+POST http://localhost:3000/account/logout
+GET http://localhost:3000/music/list
+GET http://localhost:3000/music/get
