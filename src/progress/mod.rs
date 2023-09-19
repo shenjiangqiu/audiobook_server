@@ -12,7 +12,6 @@ use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, Condition, EntityTrait, QueryFilter, TryIntoModel,
 };
 use tracing::debug;
-use tracing_subscriber::field::debug;
 
 use crate::entities::{prelude::*, *};
 use crate::{middleware::LoginInfo, AppStat};
