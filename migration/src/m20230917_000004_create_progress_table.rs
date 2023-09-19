@@ -32,7 +32,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Progress::AccountId).integer().not_null())
                     .col(ColumnDef::new(Progress::MusicId).integer().not_null())
                     .col(ColumnDef::new(Progress::ChapterNo).integer().not_null())
-                    .col(ColumnDef::new(Progress::Progress).integer().not_null())
+                    .col(ColumnDef::new(Progress::Progress).double().not_null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-Progress-AccountId")

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>List Music Books</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+
+<body>
+    <h2>List Music Books</h2>
+    <a href="/index.html">home</a>
+
+    <div id="bookList"></div>
+
+    <script>
+        $(document).ready(function () {
+            var page = 1;
+            var pageSize = 10;
+
+            // Fetch music books
+            function fetchBooks() {
+                var params = {
+                    page: page - 1,
+                    page_size: pageSize
+                };
+
+                $.get("/music/listbook", params, function (response) {
+                    // Process the response
+                    var bookList = response.books;
+                    var totalPages = response.total_pages;
+
+                    // Display the list of books
+                    var booksHtml = "";
+                    for (var i = 0; i < bookList.length; i++) {
+                        var book = bookList[i];
+                        booksHtml += "<p><a href='/bookdetail.html?id=" + book.id + "'>" + "<button>bookid: " + book.id + "</button>" + "</a></p>";
+                        booksHtml += "<p><strong>Title:</strong> " + book.name + "</p>";
+                        booksHtml += "<p><strong>Author:</strong> " + book.author_id + "</p>";
+                        booksHtml += "<p><strong>Chapters:</strong> " + book.chapters + "</p>";
+                        booksHtml += "<p><strong>File folder:</strong> " + book.file_folder + "</p><br>";
+                    }
+
+                    $("#bookList").html(booksHtml);
+
+                    // Update the pagination
+                    // Assuming you have a pagination element with id "pagination"
+                    var pagination = "";
+                    for (var j = 1; j <= totalPages; j++) {
+                        if (j === page) {
+                            pagination += "<span>" + j + "</span>&nbsp;";
+                        } else {
+                            pagination += "<a href='javascript:void(0);' onclick='changePage(" + j + ")'>" + j + "</a>&nbsp;";
+                        }
+                    }
+                    $("#pagination").html(pagination);
+                });
+            }
+
+            // Function to change page
+            function changePage(newPage) {
+                page = newPage;
+                fetchBooks();
+            }
+
+            // Initial fetch
+            fetchBooks();
+        });
+    </script>
+
+    <!-- Pagination element -->
+    <div id="pagination"></div>
+</body>
+
+</html>

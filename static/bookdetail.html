@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>get book</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+
+<body>
+    <h2>Book detail</h2>
+    <a href="/index.html">home</a>
+    <div id="progress"></div>
+    <div id="book_detail"></div>
+
+    <script>
+        $(document).ready(function () {
+
+            function get_player(bookId, chapterId, total, folder, progress, progress_id, user_id) {
+                return `/player.html?bookid=${bookId}&chapterid=${chapterId}&total=${total}&folder=${folder}&progress=${progress}&progress_id=${progress_id}&user_id=${user_id}`
+            }
+
+            // Fetch one book
+            function fetchBook() {
+                const queryString = window.location.search;
+                const urlParams = new URLSearchParams(queryString);
+                const bookId = urlParams.get('id');
+
+
+
+                $.get("/music/getbook/" + bookId, function (response) {
+                    // Process the response
+                    var book = response.Found;
+                    console.log(book);
+                    // Display the book
+                    var bookHtml = "";
+                    bookHtml += "<p><strong>Title:</strong> " + book.name + "</p>";
+                    bookHtml += "<p><strong>Author:</strong> " + book.author_id + "</p>";
+                    bookHtml += "<p><strong>Chapters:</strong> " + book.chapters + "</p>";
+                    bookHtml += "<p><strong>File folder:</strong> " + book.file_folder + "</p><br>";
+
+
+                    $.get("/progress/getprogress?book_id=" + bookId, function (response) {
+                        console.log(response);
+                        const chapter_no = response.chapter_no;
+                        const progress = response.progress;
+                        const player_ref_current = get_player(bookId, chapter_no, book.chapters, book.file_folder, response.progress, response.id, response.account_id);
+                        const progress_html = `<p><a href=${player_ref_current}>current progress: ${chapter_no}</a></p>`
+                        // list all chapters
+                        for (let c = 1; c <= book.chapters; c++) {
+                            var player_ref;
+                            if (c == chapter_no) {
+                                player_ref = get_player(bookId, c, book.chapters, book.file_folder, progress, response.id, response.account_id);
+                            } else {
+                                player_ref = get_player(bookId, c, book.chapters, book.file_folder, 0, response.id, response.account_id);
+                            }
+                            // bookHtml += `<a href=/player.html?bookid=${bookId}&chapterid=${c}&total=${book.chapters}&folder=${book.file_folder}>c-${c}</a> `
+                            bookHtml += `<a href=${player_ref}>c-${c}</a> `
+                        }
+                        bookHtml += "<br>"
+
+                        $("#book_detail").html(bookHtml);
+                        $("#progress").html(progress_html);
+                    });
+                });
+
+
+
+            }
+
+
+            // Initial fetch
+            fetchBook();
+        });
+    </script>
+
+</body>
+
+</html>

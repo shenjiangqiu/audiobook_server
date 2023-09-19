@@ -123,7 +123,11 @@ async fn login(
                 // save redis
                 let mut redis_conn = state.redis.lock().await;
                 let _: () = redis_conn
-                    .set_ex(&passkey_str, user.role_level, 3600 * 24 * 7)
+                    .set_ex(&passkey_str, user.id, 3600 * 24 * 7)
+                    .await
+                    .unwrap();
+                let _: () = redis_conn
+                    .set_ex(user.id, user.role_level, 3600 * 24 * 7)
                     .await
                     .unwrap();
                 // set cookie
@@ -162,7 +166,9 @@ async fn logout(State(state): State<AppStat>, cookies: Cookies) -> impl IntoResp
     if let Some(passkey) = passkey {
         debug!("deleting passkey: {}", passkey.value());
         let mut redis_conn = state.redis.lock().await;
+        let user_id: i32 = redis_conn.get(passkey.value()).await.unwrap();
         let _: () = redis_conn.del(passkey.value()).await.unwrap();
+        let _: () = redis_conn.del(user_id).await.unwrap();
     }
     // delete cookie
     cookies.remove(Cookie::named("passkey"));

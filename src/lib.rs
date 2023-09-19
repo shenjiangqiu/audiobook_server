@@ -2,15 +2,18 @@ use clap::Parser;
 use hyper::server::{accept::Accept, conn::AddrIncoming};
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Serialize};
+#[cfg(target_os = "macos")]
+use std::net::Ipv4Addr;
 use std::{
-    net::{Ipv4Addr, Ipv6Addr, SocketAddr},
+    net::{Ipv6Addr, SocketAddr},
     pin::Pin,
     sync::Arc,
     task::{Context, Poll},
 };
 use tokio::sync::Mutex;
 use tower_cookies::CookieManagerLayer;
-use tracing::info;
+use tower_http::services::ServeDir;
+use tracing::{debug, info};
 use tracing_subscriber::filter::LevelFilter;
 
 mod auth;
@@ -19,6 +22,7 @@ mod entities;
 mod management;
 mod middleware;
 mod music;
+mod progress;
 
 #[derive(Serialize, Deserialize)]
 enum MathOp {
@@ -57,6 +61,9 @@ struct Cli {
 
     #[clap(short, long, env = "PORT", default_value = "3000")]
     port: u16,
+    /// the path store all books
+    #[clap(short, long, env = "BOOKS", default_value = "./books")]
+    book_dir: String,
 }
 
 pub async fn app_main() -> eyre::Result<()> {
@@ -71,6 +78,8 @@ pub async fn app_main() -> eyre::Result<()> {
         .init();
 
     let cli = Cli::parse();
+    debug!("cli:{:?}", cli);
+
     info!("redis url:{}", cli.redis);
     info!("database url:{}", cli.db);
     info!("starting server,connecting to database and redis");
@@ -87,22 +96,35 @@ pub async fn app_main() -> eyre::Result<()> {
     let app = axum::Router::new()
         .nest("/account", auth::route(stat.clone()))
         .nest("/music", music::route(stat.clone()))
+        .nest("/progress", progress::route(stat.clone()))
         .route_layer(tower::ServiceBuilder::new().layer(CookieManagerLayer::new()))
+        .nest_service("/fetchbook", ServeDir::new(cli.book_dir))
+        .fallback_service(ServeDir::new("./static"))
         .with_state(stat);
+    #[cfg(target_os = "linux")]
+    {
+        let addr6 = SocketAddr::new(Ipv6Addr::UNSPECIFIED.into(), cli.port);
+        axum::Server::bind(&addr6)
+            .serve(app.into_make_service())
+            .await
+            .unwrap();
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let addr4 = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), cli.port);
+        let addr6 = SocketAddr::new(Ipv6Addr::UNSPECIFIED.into(), cli.port);
+        let combined = CombinedAddr {
+            a: AddrIncoming::bind(&addr4).unwrap(),
+            b: AddrIncoming::bind(&addr6).unwrap(),
+        };
+        info!("server started at addrv4: {}", addr4);
+        info!("server started at addrv6: {}", addr6);
+        axum::Server::builder(combined)
+            .serve(app.into_make_service())
+            .await
+            .unwrap();
+    }
 
-    let addr4 = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), cli.port);
-    let addr6 = SocketAddr::new(Ipv6Addr::UNSPECIFIED.into(), cli.port);
-    let combined = CombinedAddr {
-        a: AddrIncoming::bind(&addr4).unwrap(),
-        b: AddrIncoming::bind(&addr6).unwrap(),
-    };
-    info!("server started at addrv4: {}", addr4);
-    info!("server started at addrv6: {}", addr6);
-
-    axum::Server::builder(combined)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
     Ok(())
 }
 

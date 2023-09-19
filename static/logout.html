@@ -1,0 +1,37 @@
+<html>
+
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <title>logout</title>
+</head>
+
+<body>
+    <h1>hello</h1>
+    <a href="/login.html">login</a>
+    <a href="/logout.html">logout</a>
+    <a href="/authors.html">authors</a>
+    <a href="/books.html">books</a>
+    <h1>Logout</h1>
+    <script>
+        function logout() {
+            // Send POST request
+            $.ajax({
+                type: "POST",
+                url: "/account/logout",
+                success: function (response) {
+                    // Process the response here
+                    console.log(response);
+                    // Redirect to another page if needed
+                    window.location.href = "/index.html";
+                },
+                error: function (xhr, status, error) {
+                    // Handle error here
+                    console.error(error);
+                }
+            });
+        }
+        logout();
+    </script>
+</body>
+
+</html>

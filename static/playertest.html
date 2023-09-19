@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>player</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+
+<body>
+    <h2>player</h2>
+    <a href="/index.html">home</a>
+
+    <div id="player"></div>
+    <div id="next"></div>
+    <div id="book"></div>
+
+    <script>
+        $(document).ready(function () {
+
+
+            // Fetch one book
+            function setupPlayer() {
+                const queryString = window.location.search;
+                const urlParams = new URLSearchParams(queryString);
+                const bookId = urlParams.get('bookid');
+                const chapterId = urlParams.get('chapterid');
+                const total = urlParams.get('total');
+
+                const player = "<audio controls><source src=/1000.m4a >no supported file</audio>"
+                if (chapterId != total) {
+                    const next = "<a href=/player.html?bookid=" + bookId + "&chapterid=" + (parseInt(chapterId) + 1) + "&total=" + total + ">next</a>"
+                    $("#next").html(next);
+                } else {
+                    const next = "<a href=/index.html>no more;home</a>"
+                    $("#next").html(next);
+                }
+                const book = "<a href=/bookdetail.html?id=" + bookId + ">book</a>"
+                $("#player").html(player);
+                $("#book").html(book);
+
+
+            }
+            // Initial fetch
+            setupPlayer();
+        });
+    </script>
+
+</body>
+
+</html>

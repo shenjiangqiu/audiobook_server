@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>player</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+
+<body>
+    <h2>player</h2>
+    <a href="/index.html">home</a>
+
+    <div id="player"></div>
+    <div id="next"></div>
+    <div id="book"></div>
+    <div id="save_progress"></div>
+    <script>
+        var v_setprogress;
+        $(document).ready(function () {
+
+            const queryString = window.location.search;
+            const urlParams = new URLSearchParams(queryString);
+            const bookId = urlParams.get('bookid');
+            const chapterId = urlParams.get('chapterid');
+            const total = urlParams.get('total');
+            const folder = urlParams.get('folder');
+            const progress = urlParams.get('progress');
+            const progress_id = urlParams.get('progress_id');
+            const user_id = urlParams.get('user_id');
+
+
+            function get_player(bookId, chapterId, total, folder, progress, progress_id, user_id) {
+                return `/player.html?bookid=${bookId}&chapterid=${chapterId}&total=${total}&folder=${folder}&progress=${progress}&progress_id=${progress_id}&user_id=${user_id}`
+            }
+            // Fetch one book
+            function setupPlayer() {
+
+
+
+                // change the chapter id to 4 digits
+                const chapterId4 = chapterId.padStart(4, '0');
+                const mp3source = "<source src=/fetchbook/" + folder + "/" + chapterId4 + ".mp3>no supported file</source>"
+                const m4asource = "<source src=/fetchbook/" + folder + "/" + chapterId4 + ".m4a>no supported file</source>"
+                const player = `<audio id="au" controls >  ${mp3source}  ${m4asource}  </audio>`
+                if (chapterId != total) {
+                    const next_ref = get_player(bookId, (parseInt(chapterId) + 1), total, folder, 0, progress_id, user_id);
+                    const next = `<a href=${next_ref}>next</a>`
+                    $("#next").html(next);
+                } else {
+                    const next = "<a href=/index.html>no more;go home</a>"
+                    $("#next").html(next);
+                }
+                const book = "<a href=/bookdetail.html?id=" + bookId + ">book</a>"
+                $("#player").html(player);
+                $("#au").prop("currentTime", progress);
+                // play it
+                $("#au").trigger('play');
+
+                $("#book").html(book);
+                function setprogress() {
+                    // Send POST request
+                    const current_progress = $("#au").prop("currentTime");
+
+                    var data = {
+                        "id": parseInt(progress_id),
+                        "account_id": parseInt(user_id),
+                        "music_id": parseInt(bookId),
+                        "chapter_no": parseInt(chapterId),
+                        "progress": current_progress
+                    }
+                    console.log(data);
+                    $.ajax({
+                        type: "POST",
+                        url: "/progress/setprogress",
+                        data: JSON.stringify(data),
+                        dataType: "text",
+                        contentType: "application/json",
+                        success: function (response) {
+                            // Process the response here
+                            console.log(response);
+
+                        },
+                        error: function (xhr, status, error) {
+                            // Handle error here
+                            console.error(error);
+                        }
+                    });
+                }
+                v_setprogress = setprogress;
+                $("#save_progress").html("<button onclick='v_setprogress()'>save progress</button>");
+                // setup progress every 30 seconds
+                setInterval(setprogress, 30000);
+            }
+
+            // Initial fetch
+            setupPlayer();
+        });
+    </script>
+
+</body>
+
+</html>
