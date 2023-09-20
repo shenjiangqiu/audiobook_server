@@ -8,6 +8,7 @@ use tower::ServiceBuilder;
 use tower_cookies::Cookies;
 use tracing::debug;
 
+use crate::middleware::LoginInfo;
 use crate::{entities, AppStat};
 use entities::prelude::*;
 use entities::*;
@@ -17,7 +18,6 @@ enum RoleLevel {
     Admin,
     User,
 }
-
 #[derive(Debug, serde::Deserialize)]
 pub struct UserInfo {
     username: String,
@@ -122,16 +122,17 @@ async fn login(
                 let passkey_str = hex::encode(passkey);
                 // save redis
                 let mut redis_conn = state.redis.lock().await;
+                let redis_value = LoginInfo {
+                    user_id: user.id,
+                    role_level: user.role_level,
+                };
                 let _: () = redis_conn
-                    .set_ex(&passkey_str, user.id, 3600 * 24 * 7)
+                    .set_ex(&passkey_str, redis_value, 3600 * 24 * 7)
                     .await
                     .unwrap();
-                let _: () = redis_conn
-                    .set_ex(user.id, user.role_level, 3600 * 24 * 7)
-                    .await
-                    .unwrap();
+
                 // set cookie
-                let mut cookie = cookie::Cookie::new("passkey", passkey_str);
+                let mut cookie = cookie::Cookie::new(crate::consts::USR_COOKIE_KEY, passkey_str);
                 cookie.set_max_age(Duration::days(7));
                 cookie.set_path("/");
                 cookies.add(cookie);

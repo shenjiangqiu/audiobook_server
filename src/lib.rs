@@ -16,6 +16,7 @@ use tower_http::services::ServeDir;
 use tracing::{debug, info};
 
 mod auth;
+pub mod consts;
 mod database;
 pub mod entities;
 mod management;

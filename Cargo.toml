@@ -31,3 +31,4 @@ tokio-util = "0.7.8"
 tower-http = { version = "0.4.4", features = ["fs"] }
 tera = "1.19.1"
 regex = "1.9.5"
+bincode = "1.3.3"
