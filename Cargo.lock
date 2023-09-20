@@ -186,6 +186,7 @@ dependencies = [
  "md5",
  "rand",
  "redis",
+ "regex",
  "sea-orm",
  "serde",
  "tera",

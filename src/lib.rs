@@ -14,16 +14,15 @@ use tokio::sync::Mutex;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
 use tracing::{debug, info};
-use tracing_subscriber::filter::LevelFilter;
 
 mod auth;
 mod database;
-mod entities;
+pub mod entities;
 mod management;
 mod middleware;
 mod music;
 mod progress;
-
+pub mod tools;
 #[derive(Serialize, Deserialize)]
 enum MathOp {
     Add,
@@ -45,7 +44,7 @@ impl AppConnections {
 }
 type AppStat = Arc<AppConnections>;
 #[derive(Debug, Parser)]
-struct Cli {
+pub struct Cli {
     /// the redis url,start at "redis://"
     #[clap(short, long, env = "REDIS_URL", default_value = "redis://10.10.0.2/0")]
     redis: String,
@@ -66,17 +65,29 @@ struct Cli {
     book_dir: String,
 }
 
-pub async fn app_main() -> eyre::Result<()> {
+pub fn init_log() {
     // init tracing_subscriber
     tracing_subscriber::fmt::SubscriberBuilder::default()
         .with_env_filter(
             tracing_subscriber::EnvFilter::builder()
-                .with_default_directive(LevelFilter::INFO.into())
+                .with_default_directive("audiobook_server=info".parse().unwrap())
                 .from_env_lossy(),
         )
         .with_ansi(true)
         .init();
+}
+pub async fn init_db(db: &str, redis: &str) -> (DatabaseConnection, redis::aio::Connection) {
+    let db = Database::connect(db).await.unwrap();
+    let redis = redis::Client::open(redis)
+        .unwrap()
+        .get_async_connection()
+        .await
+        .unwrap();
+    (db, redis)
+}
 
+pub async fn app_main() -> eyre::Result<()> {
+    init_log();
     let cli = Cli::parse();
     debug!("cli:{:?}", cli);
 
@@ -84,13 +95,8 @@ pub async fn app_main() -> eyre::Result<()> {
     info!("database url:{}", cli.db);
     info!("starting server,connecting to database and redis");
 
-    let db = Database::connect(&cli.db).await.unwrap();
-    let redis = redis::Client::open(cli.redis)
-        .unwrap()
-        .get_async_connection()
-        .await
-        .unwrap();
     info!("database connected");
+    let (db, redis) = init_db(&cli.db, &cli.redis).await;
     let stat: AppStat = Arc::new(AppConnections::new(db, redis));
 
     let app = axum::Router::new()

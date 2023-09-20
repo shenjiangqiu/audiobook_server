@@ -3,17 +3,67 @@
 
 <head>
     <title>player</title>
+    <meta charset="utf-8" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        body {
+            background-color: burlywood;
+            font-family: Arial, Helvetica, sans-serif;
+            padding: 10px;
+            margin: 10px;
+            font-size: 3vw;
+        }
+
+        #next {
+            font-size: 6vw;
+            margin: 10px;
+            width: 100%;
+            margin-top: 30px;
+            height: 30%;
+            background-color: chocolate;
+
+        }
+
+        a:link {
+            text-decoration: none;
+        }
+
+        .nav {
+            font-size: 3vw;
+
+        }
+
+        #title {
+            font-size: 6vw;
+        }
+
+        .container {
+            background-color: beige;
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+            align-items: center;
+            align-self: center;
+            text-align: center;
+        }
+
+        #au {
+            width: 100%;
+        }
+    </style>
 </head>
 
 <body>
-    <h2>player</h2>
-    <a href="/index.html">home</a>
+    <div class="container">
+        <h2 id="title">player</h2>
+        <a class="nav" href="/index.html">home</a>
 
-    <div id="player"></div>
-    <div id="next"></div>
-    <div id="book"></div>
-    <div id="save_progress"></div>
+        <div id="player"></div>
+        <div id="next"></div>
+        <div id="book"></div>
+        <div id="save_progress"></div>
+    </div>
+
     <script>
         var v_setprogress;
         $(document).ready(function () {
@@ -28,6 +78,7 @@
             const progress_id = urlParams.get('progress_id');
             const user_id = urlParams.get('user_id');
 
+            $("#title").html(`playing: ${folder} ${chapterId} of ${total}`)
 
             function get_player(bookId, chapterId, total, folder, progress, progress_id, user_id) {
                 return `/player.html?bookid=${bookId}&chapterid=${chapterId}&total=${total}&folder=${folder}&progress=${progress}&progress_id=${progress_id}&user_id=${user_id}`
@@ -41,7 +92,7 @@
                 const chapterId4 = chapterId.padStart(4, '0');
                 const mp3source = "<source src=/fetchbook/" + folder + "/" + chapterId4 + ".mp3>no supported file</source>"
                 const m4asource = "<source src=/fetchbook/" + folder + "/" + chapterId4 + ".m4a>no supported file</source>"
-                const player = `<audio id="au" controls >  ${mp3source}  ${m4asource}  </audio>`
+                const player = `<audio id="au" controls autoplay >  ${mp3source}  ${m4asource}  </audio>`
                 if (chapterId != total) {
                     const next_ref = get_player(bookId, (parseInt(chapterId) + 1), total, folder, 0, progress_id, user_id);
                     const next = `<a href=${next_ref}>next</a>`
@@ -53,8 +104,22 @@
                 const book = "<a href=/bookdetail.html?id=" + bookId + ">book</a>"
                 $("#player").html(player);
                 $("#au").prop("currentTime", progress);
-                // play it
-                $("#au").trigger('play');
+                $("#au").on("canplay", function () {
+                    // play it
+                    $("#au").trigger("play");
+                });
+                // when the audio ends, play the next chapter
+                $("#au").on("ended", function () {
+                    // play it
+                    console.log("ended");
+                    $("#au").trigger("pause");
+                    if (chapterId != total) {
+                        const next_ref = get_player(bookId, (parseInt(chapterId) + 1), total, folder, 0, progress_id, user_id);
+                        window.location.href = next_ref;
+                    } else {
+                        window.location.href = "/index.html";
+                    }
+                });
 
                 $("#book").html(book);
                 function setprogress() {
@@ -87,7 +152,7 @@
                     });
                 }
                 v_setprogress = setprogress;
-                $("#save_progress").html("<button onclick='v_setprogress()'>save progress</button>");
+                $("#save_progress").html("<button onclick='v_setprogress()'><p>save progress</p></button>");
                 // setup progress every 30 seconds
                 setInterval(setprogress, 30000);
             }

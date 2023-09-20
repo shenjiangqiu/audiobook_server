@@ -3,13 +3,59 @@
 
 <head>
     <title>List Authors</title>
+    <meta charset="utf-8" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        body {
+            background-color: burlywood;
+        }
+
+        * {
+            font-family: Arial, Helvetica, sans-serif;
+            padding: 10px;
+            margin: 10px;
+
+        }
+
+        a:link {
+            text-decoration: none;
+        }
+
+        .nav {
+            font-size: 20px;
+
+        }
+
+        #title {
+            font-size: 40px;
+        }
+
+        .container {
+            background-color: beige;
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+            align-items: center;
+            align-self: center;
+            text-align: center;
+        }
+
+        #au {
+            width: 100%;
+        }
+    </style>
 </head>
 
 <body>
-    <h2>List Authors</h2>
-    <a href="/index.html">home</a>
-    <div id="bookList"></div>
+    <div class="container">
+        <h2 id="title">List Authors</h2>
+        <a class="nav" href="/index.html">home</a>
+        <div id="bookList"></div>
+
+        <!-- Pagination element -->
+        <div id="pagination"></div>
+    </div>
+
 
     <script>
         $(document).ready(function () {
@@ -63,8 +109,6 @@
         });
     </script>
 
-    <!-- Pagination element -->
-    <div id="pagination"></div>
 </body>
 
 </html>
