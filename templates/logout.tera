@@ -38,9 +38,7 @@
                         // Handle error here
                         console.error(error);
                         $("#logout_info").html("logout failed, please try again: error: " + error);
-                        setTimeout(function () {
-                            window.location.href = "/webui/logout";
-                        }, 3000);
+
                     }
                 });
             }

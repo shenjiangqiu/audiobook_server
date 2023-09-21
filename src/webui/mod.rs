@@ -119,7 +119,10 @@ async fn logout_page(state: State<AppStat>) -> Response {
     logout_html(&state)
 }
 
-async fn index_page(State(state): State<AppStat>, login_status: PasskeyCheckResult) -> Response {
+pub(crate) async fn index_page(
+    State(state): State<AppStat>,
+    login_status: PasskeyCheckResult,
+) -> Response {
     match login_status {
         PasskeyCheckResult::LogInSucceed(data) => index_html(&state, &data).await,
         _ => login_html(&state),

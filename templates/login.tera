@@ -47,10 +47,10 @@
                         // Process the response here
                         console.log(response);
                         // Redirect to another page if needed
-                        $("#login_info").html("logout success, will go to Home in 3 seconds");
+                        $("#login_info").html("logout success, will go to Home in 1 seconds");
                         setTimeout(function () {
-                            window.location.href = "/webui/login";
-                        }, 3000);
+                            window.location.href = "/webui/index";
+                        }, 1000);
                     },
                     error: function (xhr, status, error) {
                         // Handle error here

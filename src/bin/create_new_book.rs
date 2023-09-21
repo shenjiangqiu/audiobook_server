@@ -1,6 +1,6 @@
 use audiobook_server::{
     entities::{prelude::*, *},
-    init_db, init_log,
+    init_log, init_mysql,
 };
 use clap::Parser;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
@@ -10,7 +10,6 @@ async fn main() {
     init_log();
 
     let Cli {
-        redis,
         db,
         book_dir,
         new_book_name,
@@ -18,7 +17,7 @@ async fn main() {
         source_dir,
     } = Cli::parse();
 
-    let (db, _redis) = init_db(&db, &redis).await;
+    let db = init_mysql(&db).await;
     let db_book_dir = format!("{}/{}", author_name, new_book_name);
     let target_dir = format!("{}/{}/{}", book_dir, author_name, new_book_name);
     let count = audiobook_server::tools::arrange_new_folder(source_dir, target_dir).await;
@@ -66,10 +65,6 @@ async fn main() {
 
 #[derive(Debug, Parser)]
 pub struct Cli {
-    /// the redis url,start at "redis://"
-    #[clap(short, long, env = "REDIS_URL", default_value = "redis://10.10.0.2/0")]
-    redis: String,
-
     /// the database url,start at "mysql://"
     #[clap(
         short,

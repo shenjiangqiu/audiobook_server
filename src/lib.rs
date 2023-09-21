@@ -1,5 +1,10 @@
+use axum::{response::IntoResponse, routing::get};
 use clap::Parser;
-use hyper::server::{accept::Accept, conn::AddrIncoming};
+use hyper::{
+    header,
+    server::{accept::Accept, conn::AddrIncoming},
+    Method, StatusCode,
+};
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Serialize};
 #[cfg(target_os = "macos")]
@@ -13,7 +18,10 @@ use std::{
 use tera::Tera;
 use tokio::sync::Mutex;
 use tower_cookies::CookieManagerLayer;
-use tower_http::services::ServeDir;
+use tower_http::{
+    cors::{Any, CorsLayer},
+    services::ServeDir,
+};
 use tracing::{debug, info};
 
 mod auth;
@@ -85,14 +93,54 @@ pub fn init_log() {
         .with_ansi(true)
         .init();
 }
-pub async fn init_db(db: &str, redis: &str) -> (DatabaseConnection, redis::aio::Connection) {
+pub async fn init_mysql(db: &str) -> DatabaseConnection {
     let db = Database::connect(db).await.unwrap();
+    db
+}
+pub async fn init_redis(redis: &str) -> redis::aio::Connection {
     let redis = redis::Client::open(redis)
         .unwrap()
         .get_async_connection()
         .await
         .unwrap();
-    (db, redis)
+    redis
+}
+
+pub async fn init_db(db: &str, redis: &str) -> (DatabaseConnection, redis::aio::Connection) {
+    (init_mysql(db).await, init_redis(redis).await)
+}
+
+async fn redirect(redirect_path: &str) -> impl IntoResponse {
+    // redirect to redirect_path
+    (
+        StatusCode::FOUND,
+        [(header::LOCATION, redirect_path.to_owned())],
+    )
+}
+fn setup_tera() -> Tera {
+    let mut tera = Tera::default();
+    let index = include_str!("../templates/index.tera");
+    let login = include_str!("../templates/login.tera");
+    let logout = include_str!("../templates/logout.tera");
+    let author_detail = include_str!("../templates/author_detail.tera");
+    let book_detail = include_str!("../templates/book_detail.tera");
+    let books = include_str!("../templates/books.tera");
+    let authors = include_str!("../templates/authors.tera");
+    let base = include_str!("../templates/base.tera");
+    let player = include_str!("../templates/player.tera");
+    tera.add_raw_templates([
+        ("index.tera", index),
+        ("login.tera", login),
+        ("logout.tera", logout),
+        ("author_detail.tera", author_detail),
+        ("book_detail.tera", book_detail),
+        ("books.tera", books),
+        ("authors.tera", authors),
+        ("base.tera", base),
+        ("player.tera", player),
+    ])
+    .unwrap();
+    tera
 }
 
 pub async fn app_main() -> eyre::Result<()> {
@@ -106,9 +154,8 @@ pub async fn app_main() -> eyre::Result<()> {
 
     info!("database connected");
     let (db, redis) = init_db(&cli.db, &cli.redis).await;
-    let tera = Tera::new("templates/**/*").unwrap();
     let stat: AppStat = Arc::new(AppStats {
-        tera,
+        tera: setup_tera(),
         connections: AppConnections::new(db, redis),
     });
 
@@ -119,7 +166,33 @@ pub async fn app_main() -> eyre::Result<()> {
         .nest("/webui", webui::route(stat.clone()))
         .route_layer(tower::ServiceBuilder::new().layer(CookieManagerLayer::new())) // above route need login auth, so need cookie service
         .nest_service("/fetchbook", ServeDir::new(cli.book_dir))
+        .route("/", get(|| async { redirect("/webui/index").await }))
+        .route(
+            "/css/style.css",
+            get(|| async {
+                (
+                    StatusCode::OK,
+                    [(header::CONTENT_TYPE, "text/css")],
+                    include_str!("../static/css/style.css"),
+                )
+            }),
+        )
+        .route(
+            "/favicon.ico",
+            get(|| async {
+                (
+                    StatusCode::OK,
+                    [(header::CONTENT_TYPE, "image/x-icon")],
+                    include_bytes!("../static/favicon.ico"),
+                )
+            }),
+        )
         .fallback_service(ServeDir::new("./static"))
+        .route_layer(
+            CorsLayer::new()
+                .allow_methods([Method::GET, Method::POST])
+                .allow_origin(Any),
+        )
         .with_state(stat);
     #[cfg(target_os = "linux")]
     {
