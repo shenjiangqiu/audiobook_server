@@ -19,7 +19,7 @@ pub(crate) fn route(state: AppStat) -> axum::Router<AppStat> {
         .route_layer(
             tower::ServiceBuilder::new().layer(axum::middleware::from_fn_with_state(
                 state,
-                super::middleware::user_auth,
+                super::middleware::user_auth::user_auth,
             )),
         )
 }
@@ -54,7 +54,7 @@ async fn list_book(
     debug!("list book");
     let books = Music::find()
         .order_by_asc(music::Column::Id)
-        .paginate(&state.db, args.page_size);
+        .paginate(&state.connections.db, args.page_size);
     let total_pages = books.num_pages().await.unwrap();
     let pages = books.fetch_page(args.page).await.unwrap();
     Json(ListResult {
@@ -71,7 +71,7 @@ async fn listauthor(
     debug!("list book");
     let authors = Author::find()
         .order_by_asc(author::Column::Id)
-        .paginate(&state.db, args.page_size);
+        .paginate(&state.connections.db, args.page_size);
     let total_pages = authors.num_pages().await.unwrap();
     let pages = authors.fetch_page(args.page).await.unwrap();
     Json(ListResult {
@@ -92,7 +92,10 @@ async fn get_author_by_id(
     Path(id): Path<i32>,
 ) -> Json<GetResult<author::Model>> {
     debug!("get author by id:{}", id);
-    let author = Author::find_by_id(id).one(&state.db).await.unwrap();
+    let author = Author::find_by_id(id)
+        .one(&state.connections.db)
+        .await
+        .unwrap();
     match author {
         Some(author) => Json(GetResult::Found(author)),
         None => Json(GetResult::NotFound(format!("author {} not found", id))),
@@ -107,7 +110,7 @@ async fn get_authors_by_name(
     let authors = Author::find()
         .filter(author::Column::Name.contains(args.name))
         .order_by_asc(author::Column::Id)
-        .paginate(&state.db, args.page_size);
+        .paginate(&state.connections.db, args.page_size);
     let total_pages = authors.num_pages().await.unwrap();
     let pages = authors.fetch_page(args.page).await.unwrap();
     Json(ListResult {
@@ -122,7 +125,10 @@ async fn getbook_by_id(
     Path(id): Path<i32>,
 ) -> Json<GetResult<music::Model>> {
     debug!("get author by id:{}", id);
-    let music = Music::find_by_id(id).one(&state.db).await.unwrap();
+    let music = Music::find_by_id(id)
+        .one(&state.connections.db)
+        .await
+        .unwrap();
     match music {
         Some(music) => Json(GetResult::Found(music)),
         None => Json(GetResult::NotFound(format!("author {} not found", id))),
@@ -144,7 +150,7 @@ async fn getbooks_by_name(
     let books = Music::find()
         .filter(music::Column::Name.contains(args.name))
         .order_by_asc(music::Column::Id)
-        .paginate(&state.db, args.page_size);
+        .paginate(&state.connections.db, args.page_size);
     let total_pages = books.num_pages().await.unwrap();
     let pages = books.fetch_page(args.page).await.unwrap();
     Json(ListResult {
@@ -158,7 +164,7 @@ async fn getbooks_by_name(
 //     State(state): State<AppStat>,
 //     Path((bookid, chapterid)): Path<(i32, i32)>,
 // ) -> impl IntoResponse {
-//     let book = Music::find_by_id(bookid).one(&state.db).await.unwrap();
+//     let book = Music::find_by_id(bookid).one(&state.connections.db).await.unwrap();
 //     match book {
 //         Some(book) => {
 //             let mp3file = PathBuf::from(format!("{}/{:04}.mp3", book.file_folder, chapterid));

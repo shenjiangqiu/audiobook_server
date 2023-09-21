@@ -1,0 +1,24 @@
+{%extends "base.tera"%}
+{%block content%}
+<h1>book of {{author_name}}</h1>
+<div class="list">
+
+    <ul>
+        {# pub struct Model {
+        #[sea_orm(primary_key)]
+        pub id: i32,
+        pub author_id: i32,
+        #[sea_orm(unique)]
+        pub name: String,
+        pub chapters: i32,
+        pub file_folder: String,
+        } #}
+        {%for book in books%}
+        <li><a href="/webui/player">{{book.name}}-chapters:{{book.chapters}}</a></li>
+        {%endfor%}
+
+    </ul>
+</div>
+
+
+{%endblock content%}

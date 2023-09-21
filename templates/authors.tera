@@ -1,0 +1,23 @@
+{%extends "base.tera"%}
+{%block content%}
+<h1>All authors</h1>
+<div class="list">
+
+    <ul>
+        {# pub struct Model {
+        #[sea_orm(primary_key)]
+        pub id: i32,
+        pub avatar: String,
+        #[sea_orm(unique)]
+        pub name: String,
+        pub description: String,
+        } #}
+        {%for author in authors%}
+        <li><a href="/webui/author_detail?id={{author.id}}">{{author.name}}</a></li>
+        {%endfor%}
+
+    </ul>
+</div>
+
+
+{%endblock content%}

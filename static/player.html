@@ -154,7 +154,13 @@
                 v_setprogress = setprogress;
                 $("#save_progress").html("<button onclick='v_setprogress()'><p>save progress</p></button>");
                 // setup progress every 30 seconds
-                setInterval(setprogress, 30000);
+
+                function check_is_playing_and_setprogress() {
+                    if ($("#au").prop("paused") == false) {
+                        setprogress();
+                    }
+                }
+                setInterval(check_is_playing_and_setprogress, 30000);
             }
 
             // Initial fetch

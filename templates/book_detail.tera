@@ -1,0 +1,39 @@
+{%extends "base.tera"%}
+{%block content%}
+<h1>{{book.name}}</h1>
+<div class="list">
+
+    <ul>
+        {# pub struct Model {
+        #[sea_orm(primary_key)]
+        pub id: i32,
+        pub author_id: i32,
+        #[sea_orm(unique)]
+        pub name: String,
+        pub chapters: i32,
+        pub file_folder: String,
+        } #}
+
+        {# pub struct Model {
+        #[sea_orm(primary_key)]
+        pub id: i32,
+        pub account_id: i32,
+        pub music_id: i32,
+        pub chapter_no: i32,
+        #[sea_orm(column_type = "Double")]
+        pub progress: f64,
+        } #}
+        <div>name: {{book.name}}</div>
+        <div>author:<a href="/webui/author_detail?id={{author.id}}">{{author.name}}</a> </div>
+        <div><a href="/webui/player?book_id={{book.id}}&chapter_id={{progress.chapter_no}}">last read:</a> chapter:
+            {{progress.chapter_no}}, secs: {{progress.progress}}</div>
+        <div>chapters: {{book.chapters}}</div>
+        {%for chapter in range(start=1,end=(book.chapters+1))%}
+        <a href="/webui/player?book_id={{book.id}}&chapter_id={{chapter}}">{{chapter}}</a>
+        {%endfor%}
+
+    </ul>
+</div>
+
+
+{%endblock content%}

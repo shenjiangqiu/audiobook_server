@@ -1,0 +1,30 @@
+<html>
+
+<head>
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="main">
+        <div id="title">
+            <h1>{{title}}</h1>
+        </div>
+        <div class="welcome">
+            <p class="username">{{user_name}}</p>
+            <p class="logout"><a href="/webui/logout">logout</a></p>
+        </div>
+        <div id="nav">
+            <div class="Home"><a href="/webui/index">Home</a></div>
+            <div class="nav"><a href="/webui/authors">Authors</a></div>
+            <div class="nav"><a href="/webui/books">Books</a></div>
+        </div>
+        <div id="content">{%block content%}{%endblock content%}</div>
+        <div id="footer">Jiangqiu Shen's audio book player <div class="home"><a href="/webui/index">Home</a></div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

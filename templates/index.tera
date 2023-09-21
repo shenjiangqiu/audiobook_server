@@ -1,0 +1,26 @@
+{%extends "base.tera"%}
+{%block content%}
+<h1>Recent played:</h1>
+<div class="list">
+
+    <ul>
+        {# struct RecentData {
+        book_id: i32,
+        book_name: String,
+        author_id: i32,
+        author: String,
+        chapter_id: i32,
+        progress: f64,
+        progress_id: i32,
+        } #}
+        {%for book in recent_played%}
+        <li><a
+                href="/webui/player?book_id={{book.book_id}}&chapter_id={{book.chapter_id}}">{{book.book_name}}-{{book.chapter_id}}-{{book.progress}}</a>
+        </li>
+        {%endfor%}
+
+    </ul>
+</div>
+
+
+{%endblock content%}

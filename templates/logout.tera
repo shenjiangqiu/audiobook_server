@@ -1,0 +1,53 @@
+<html>
+
+<head>
+    <title>logout</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+</head>
+
+<body>
+    <div class="main">
+        <div id="title">
+            <h1>logout</h1>
+        </div>
+
+
+        <div id="content">
+            Logging out...
+            <div id="logout_info"></div>
+        </div>
+
+        <script>
+            function logout() {
+                // Send POST request
+                $.ajax({
+                    type: "POST",
+                    url: "/account/logout",
+                    success: function (response) {
+                        // Process the response here
+                        console.log(response);
+                        // Redirect to another page if needed
+                        $("#logout_info").html("logout success, will go to login in 3 seconds");
+                        setTimeout(function () {
+                            window.location.href = "/webui/login";
+                        }, 3000);
+                    },
+                    error: function (xhr, status, error) {
+                        // Handle error here
+                        console.error(error);
+                        $("#logout_info").html("logout failed, please try again: error: " + error);
+                        setTimeout(function () {
+                            window.location.href = "/webui/logout";
+                        }, 3000);
+                    }
+                });
+            }
+            logout();
+        </script>
+    </div>
+
+</body>
+
+</html>

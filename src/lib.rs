@@ -10,6 +10,7 @@ use std::{
     sync::Arc,
     task::{Context, Poll},
 };
+use tera::Tera;
 use tokio::sync::Mutex;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
@@ -22,14 +23,21 @@ pub mod entities;
 mod management;
 mod middleware;
 mod music;
-mod progress;
+pub(crate) mod progress;
 pub mod tools;
+mod webui;
+
 #[derive(Serialize, Deserialize)]
 enum MathOp {
     Add,
     Sub,
     Mul,
     Div,
+}
+
+pub(crate) struct AppStats {
+    pub tera: Tera,
+    pub connections: AppConnections,
 }
 pub(crate) struct AppConnections {
     pub db: DatabaseConnection,
@@ -43,7 +51,7 @@ impl AppConnections {
         }
     }
 }
-type AppStat = Arc<AppConnections>;
+type AppStat = Arc<AppStats>;
 #[derive(Debug, Parser)]
 pub struct Cli {
     /// the redis url,start at "redis://"
@@ -98,13 +106,18 @@ pub async fn app_main() -> eyre::Result<()> {
 
     info!("database connected");
     let (db, redis) = init_db(&cli.db, &cli.redis).await;
-    let stat: AppStat = Arc::new(AppConnections::new(db, redis));
+    let tera = Tera::new("templates/**/*").unwrap();
+    let stat: AppStat = Arc::new(AppStats {
+        tera,
+        connections: AppConnections::new(db, redis),
+    });
 
     let app = axum::Router::new()
         .nest("/account", auth::route(stat.clone()))
         .nest("/music", music::route(stat.clone()))
         .nest("/progress", progress::route(stat.clone()))
-        .route_layer(tower::ServiceBuilder::new().layer(CookieManagerLayer::new()))
+        .nest("/webui", webui::route(stat.clone()))
+        .route_layer(tower::ServiceBuilder::new().layer(CookieManagerLayer::new())) // above route need login auth, so need cookie service
         .nest_service("/fetchbook", ServeDir::new(cli.book_dir))
         .fallback_service(ServeDir::new("./static"))
         .with_state(stat);

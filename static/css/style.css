@@ -1,0 +1,108 @@
+body {
+    background-color: #9b9595;
+    color: #333;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+
+
+
+
+
+.main {
+    width: 80%;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    font-size: 2em;
+    color: #333;
+}
+
+#title {
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.welcome {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.username {
+    font-weight: bold;
+}
+
+.logout a {
+    color: #333;
+}
+
+#nav {
+    background-color: #333;
+    color: #fff;
+    padding: 10px 0;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-around;
+}
+
+a {
+    text-decoration: none;
+}
+
+.list a {
+    color: rgb(82, 50, 11);
+    font-size: 1em;
+}
+
+.nav a {
+    color: #fff;
+    text-decoration: none;
+}
+
+#content {
+    min-height: 400px;
+    margin-bottom: 20px;
+}
+
+#footer {
+    text-align: center;
+    padding: 10px 0;
+    background-color: #333;
+    color: #fff;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.home * {
+    color: aquamarine;
+}
+
+.player audio {
+    width: 100%;
+}
+
+.player {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.container {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+
+
+.container>* {
+    padding: 10px;
+    border-radius: 5px;
+}

@@ -8,6 +8,7 @@ use tower::ServiceBuilder;
 use tower_cookies::Cookies;
 use tracing::debug;
 
+use crate::consts::USR_COOKIE_KEY;
 use crate::middleware::LoginInfo;
 use crate::{entities, AppStat};
 use entities::prelude::*;
@@ -31,7 +32,7 @@ pub(crate) fn route(state: super::AppStat) -> axum::Router<super::AppStat> {
         .route_layer(
             ServiceBuilder::new().layer(axum::middleware::from_fn_with_state(
                 state,
-                super::middleware::admin_auth,
+                super::middleware::admin_auth::admin_auth,
             )),
         )
         .route("/login", post(login))
@@ -58,7 +59,9 @@ async fn create_account(
         }),
         ..Default::default()
     };
-    let account_result = Account::insert(new_account).exec(&state.db).await;
+    let account_result = Account::insert(new_account)
+        .exec(&state.connections.db)
+        .await;
     match account_result {
         Ok(_) => {
             let mut headers = HeaderMap::new();
@@ -83,7 +86,7 @@ struct AccountResponse {
 }
 
 async fn get_account(State(state): State<AppStat>) -> Json<Vec<AccountResponse>> {
-    let users = Account::find().all(&state.db).await.unwrap();
+    let users = Account::find().all(&state.connections.db).await.unwrap();
     Json(
         users
             .into_iter()
@@ -108,7 +111,7 @@ async fn login(
     debug!("login: {:?}", user_info);
     let user = Account::find()
         .filter(account::Column::Name.eq(&user_info.username))
-        .one(&state.db)
+        .one(&state.connections.db)
         .await
         .unwrap();
     debug!("user: {:?}", user);
@@ -121,10 +124,11 @@ async fn login(
                 let passkey = rand::random::<[u8; 16]>();
                 let passkey_str = hex::encode(passkey);
                 // save redis
-                let mut redis_conn = state.redis.lock().await;
+                let mut redis_conn = state.connections.redis.lock().await;
                 let redis_value = LoginInfo {
                     user_id: user.id,
                     role_level: user.role_level,
+                    user_name: user.name,
                 };
                 let _: () = redis_conn
                     .set_ex(&passkey_str, redis_value, 3600 * 24 * 7)
@@ -163,16 +167,14 @@ async fn login(
 
 async fn logout(State(state): State<AppStat>, cookies: Cookies) -> impl IntoResponse {
     debug!("logout");
-    let passkey = cookies.get("passkey");
+    let passkey = cookies.get(USR_COOKIE_KEY);
     if let Some(passkey) = passkey {
         debug!("deleting passkey: {}", passkey.value());
-        let mut redis_conn = state.redis.lock().await;
-        let user_id: i32 = redis_conn.get(passkey.value()).await.unwrap();
+        let mut redis_conn = state.connections.redis.lock().await;
         let _: () = redis_conn.del(passkey.value()).await.unwrap();
-        let _: () = redis_conn.del(user_id).await.unwrap();
     }
     // delete cookie
-    cookies.remove(Cookie::named("passkey"));
+    cookies.remove(Cookie::named(USR_COOKIE_KEY));
 
     let mut headers = HeaderMap::new();
     headers.insert(LOCATION, "/".parse().unwrap());
