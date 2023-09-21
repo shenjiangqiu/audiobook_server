@@ -202,7 +202,7 @@ pub async fn app_main() -> eyre::Result<()> {
             .await
             .unwrap();
     }
-    #[cfg(target_os = "macos")]
+    #[cfg(not(target_os = "linux"))]
     {
         let addr4 = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), cli.port);
         let addr6 = SocketAddr::new(Ipv6Addr::UNSPECIFIED.into(), cli.port);
