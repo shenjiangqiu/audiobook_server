@@ -174,8 +174,8 @@ async fn logout(State(state): State<AppStat>, cookies: Cookies) -> impl IntoResp
         let _: () = redis_conn.del(passkey.value()).await.unwrap();
     }
     // delete cookie
-    cookies.remove(Cookie::named(USR_COOKIE_KEY));
-
+    let cookie = Cookie::build(USR_COOKIE_KEY, "").path("/").finish();
+    cookies.remove(cookie);
     let mut headers = HeaderMap::new();
     headers.insert(LOCATION, "/".parse().unwrap());
     (headers, "logout success")
