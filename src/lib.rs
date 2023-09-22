@@ -5,9 +5,10 @@ use hyper::{
     server::{accept::Accept, conn::AddrIncoming},
     Method, StatusCode,
 };
+use dotenv::dotenv;
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Serialize};
-#[cfg(target_os = "macos")]
+#[cfg(not(target_os = "linux"))]
 use std::net::Ipv4Addr;
 use std::{
     net::{Ipv6Addr, SocketAddr},
@@ -144,6 +145,7 @@ fn setup_tera() -> Tera {
 }
 
 pub async fn app_main() -> eyre::Result<()> {
+    dotenv().ok();
     init_log();
     let cli = Cli::parse();
     debug!("cli:{:?}", cli);
