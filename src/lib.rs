@@ -1,11 +1,11 @@
-use axum::{response::IntoResponse, routing::get};
+use axum::{response::IntoResponse, routing::get, Router};
 use clap::Parser;
+use dotenv::dotenv;
 use hyper::{
     header,
     server::{accept::Accept, conn::AddrIncoming},
     Method, StatusCode,
 };
-use dotenv::dotenv;
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Serialize};
 #[cfg(not(target_os = "linux"))]
@@ -160,14 +160,20 @@ pub async fn app_main() -> eyre::Result<()> {
         tera: setup_tera(),
         connections: AppConnections::new(db, redis),
     });
+    let fetch_book_router = Router::new()
+        .nest_service("/fetchbook", ServeDir::new(cli.book_dir))
+        .route_layer(axum::middleware::from_fn_with_state(
+            stat.clone(),
+            middleware::user_auth::user_auth,
+        ));
 
-    let app = axum::Router::new()
+    let app = Router::new()
         .nest("/account", auth::route(stat.clone()))
         .nest("/music", music::route(stat.clone()))
         .nest("/progress", progress::route(stat.clone()))
         .nest("/webui", webui::route(stat.clone()))
+        .merge(fetch_book_router)
         .route_layer(tower::ServiceBuilder::new().layer(CookieManagerLayer::new())) // above route need login auth, so need cookie service
-        .nest_service("/fetchbook", ServeDir::new(cli.book_dir))
         .route("/", get(|| async { redirect("/webui/index").await }))
         .route(
             "/css/style.css",
