@@ -1,42 +1,80 @@
 {%extends "base.tera"%}
 {%block content%}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<style>
+    .max_container {
+        display: flex;
+        justify-content: space-between;
+        justify-items: stretch;
+        margin-top: 5px;
+    }
 
-<h1>playing {{book.name}}-{{chapter_id}}</h1>
+    .half_container {
+        width: 48%;
+        display: flex;
+        justify-items: stretch;
+    }
 
-<div class="container">
+    .player {
+        width: 100%;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+    }
+
+    .full {
+        width: 100%;
+    }
+</style>
+<h1 id="player_title">playing {{book.name}}-{{chapter_id}}</h1>
+<div>
     <div id="player" class="player">
-        <audio controls autoplay id="au" currentTime={{this_progress}}>
-            <source src="/fetchbook/{{book.file_folder}}/{{chapter_id_name}}.mp3" type="audio/mpeg">
-            <source src="/fetchbook/{{book.file_folder}}/{{chapter_id_name}}.m4a" type="audio/mpeg">
+        <audio controls autoplay id="au" currentTime={{this_progress}} class="player"
+            src="/fetchbook/{{book.file_folder}}/{{chapter_id_name}}.m4a">
             Your browser does not support the audio element.
         </audio>
     </div>
-    <div id="next">
-        <a href="/webui/player?book_id={{book.id}}&chapter_id={{chapter_id+1}}">next</a>
+
+    <div class="container">
+
+        <div id="prev">
+            <button id="prev_link" onclick="prev()">prev</button>
+        </div>
+        <div id="next">
+            <button id="next_link" onclick="next()">next</button>
+        </div>
+        <div id="book">
+            <a href="/webui/book_detail?id={{book.id}}"><button>go to book</button></a>
+        </div>
     </div>
-    <div id="book">
-        <a href="/webui/book_detail?id={{book.id}}">book</a>
+    <div class="max_container">
+        <div id="save_progress" class="half_container"><button onclick="on_save_progress_click()"
+                class="full">save_progress</button>
+        </div>
+        <div class="half_container"><button id="play_bt" class="full" onclick="play_bt_click()"></button></div>
     </div>
-    <div id="save_progress"><button onclick="on_save_progress_click()">save_progress</button></div>
-    <div id="save_status">Not save yet</div>
+</div>
+<div>
+    <div class="container">
+        <div>----</div>
+        <div id="save_status">Not save yet</div>
+        <div>----</div>
+
+    </div>
 </div>
 <script>
     const progress_id = parseInt("{{progress.id}}");
     const user_id = parseInt("{{user_id}}");
     const bookId = parseInt("{{book.id}}");
-    const chapterId = parseInt("{{chapter_id}}");
-    const this_progress = parseFloat("{{this_progress}}");
-    function setprogress(progress_id, user_id, bookId, chapterId) {
-        // Send POST request
-        const current_progress = $("#au").prop("currentTime");
+    var chapterId = parseInt("{{chapter_id}}");
+    var this_progress = parseFloat("{{this_progress}}");
 
+    function setprogress_with_time(progress_id, user_id, bookId, chapterId, time) {
         var data = {
             "id": progress_id,
             "account_id": user_id,
             "music_id": bookId,
             "chapter_no": chapterId,
-            "progress": current_progress
+            "progress": time
         }
 
         console.log(data);
@@ -49,7 +87,7 @@
             success: function (response) {
                 // Process the response here
                 console.log(response);
-                $("#save_status").html("saved time:" + parseInt(current_progress / 60) + ":" + parseInt(current_progress % 60));
+                $("#save_status").html("saved time:" + parseInt(time / 60) + ":" + parseInt(time % 60));
 
             },
             error: function (xhr, status, error) {
@@ -58,6 +96,12 @@
                 $("#save_status").html("error:" + error);
             }
         });
+    }
+
+    function setprogress(progress_id, user_id, bookId, chapterId) {
+        // Send POST request
+        const current_progress = $("#au").prop("currentTime");
+        setprogress_with_time(progress_id, user_id, bookId, chapterId, current_progress);
 
     }
 
@@ -71,6 +115,47 @@
         }
         setprogress(progress_id, user_id, bookId, chapterId);
     }
+    function play_bt_click() {
+        if ($("#au").prop("paused")) {
+            $("#au").trigger("play");
+            $("#play_bt").html("pause");
+        } else {
+            $("#au").trigger("pause");
+            $("#play_bt").html("play");
+        }
+    }
+    function prev() {
+        if (chapterId == 1) {
+            alert("the first chapter");
+            return;
+        }
+        $("#au").prop("currentTime", 0);
+        chapterId -= 1;
+        this_progress = 0;
+        chapter_id_name = chapterId.toString().padStart(4, "0");
+        $("#au").prop("src", `/fetchbook/{{book.file_folder}}/${chapter_id_name}.m4a`);
+        $("#au").trigger("play");
+        $("#player_title").html("playing {{book.name}} " + chapterId);
+        $("#title").html("playing {{book.name}} " + chapterId);
+        document.head.title = "playing {{book.name}} " + chapterId;
+    }
+
+    function next() {
+        if (chapterId == book.chapters) {
+            alert("the end");
+            return;
+        }
+        $("#au").prop("currentTime", 0);
+        chapterId += 1;
+        this_progress = 0;
+        chapter_id_name = chapterId.toString().padStart(4, "0");
+        $("#au").prop("src", `/fetchbook/{{book.file_folder}}/${chapter_id_name}.m4a`);
+
+        $("#au").trigger("play");
+        $("#player_title").html("playing {{book.name}} " + chapterId);
+        $("#title").html("playing {{book.name}} " + chapterId);
+        document.head.title = "playing {{book.name}} " + chapterId;
+    }
 
     $(document).ready(function () {
         $("#au").prop("currentTime", this_progress);
@@ -78,9 +163,30 @@
             // play it
             $("#au").trigger("play");
         });
+        // set init state
+        if ($("#au").prop("paused")) {
+            $("#play_bt").html("play");
+        } else {
+            $("#play_bt").html("pause");
+        }
+
+        $("#au").on("play", function () {
+            // play it
+            $("#play_bt").html("pause");
+        });
+        $("#au").on("pause", function () {
+            // play it
+            $("#play_bt").html("play");
+        });
         // when the audio ends, play the next chapter
         $("#au").on("ended", function () {
-            window.location.href = "/webui/player?book_id={{book.id}}&chapter_id={{chapter_id+1}}";
+            // save progress
+            if (chapterId == book.chapters) {
+                alert("the end");
+                return;
+            }
+            setprogress_with_time(progress_id, user_id, bookId, chapterId + 1, 0);
+            next();
         });
 
         setInterval(function () {

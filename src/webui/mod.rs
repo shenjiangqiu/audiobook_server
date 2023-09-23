@@ -27,6 +27,7 @@ pub(crate) fn route(state: AppStat) -> Router<AppStat> {
         .route("/book_detail", get(book_detail_page))
         .route("/author_detail", get(author_detail_page))
         .route("/player", get(player_page))
+        .route("/newplayer", get(newplayer_page))
         .route_layer(axum::middleware::from_fn_with_state(
             state,
             super::middleware::webui_auth::webui_auth,
@@ -310,6 +311,55 @@ async fn player_page(
         _ => login_html(&state),
     }
 }
+
+async fn newplayer_page(
+    State(state): State<AppStat>,
+    Query(para): Query<PlayerPara>,
+    login_status: PasskeyCheckResult,
+) -> impl IntoResponse {
+    match login_status {
+        PasskeyCheckResult::LogInSucceed(data) => {
+            let book_id = para.book_id;
+            let chapter_id = para.chapter_id;
+
+            let book = Music::find_by_id(book_id)
+                .one(&state.connections.db)
+                .await
+                .unwrap()
+                .unwrap();
+            let progress =
+                get_or_create_progress(&state.connections.db, data.user_id, book_id).await;
+
+            let mut context = tera::Context::new();
+            // data for base
+            context.insert("title", &format!("Playing {}-{}", book.name, chapter_id));
+            context.insert("user_name", &data.user_name);
+
+            context.insert("user_id", &data.user_id);
+            context.insert("progress", &progress);
+            context.insert("book", &book);
+            context.insert("chapter_id", &chapter_id);
+            context.insert("chapter_id_name", &format!("{:04}", chapter_id));
+            if progress.chapter_no == chapter_id {
+                context.insert("this_progress", &progress.progress);
+            } else {
+                context.insert("this_progress", &0.);
+            }
+
+            state
+                .tera
+                .render("newplayer.tera", &context)
+                .map(|html| (StatusCode::OK, Html(html)))
+                .map_err(|e| {
+                    error!("render error: {}", e);
+                    (StatusCode::INTERNAL_SERVER_ERROR, "render error")
+                })
+                .into_response()
+        }
+        _ => login_html(&state),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

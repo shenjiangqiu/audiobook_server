@@ -1,20 +1,21 @@
 use axum::{response::IntoResponse, routing::get, Router};
 use clap::Parser;
 use dotenv::dotenv;
-use hyper::{
-    header,
-    server::{accept::Accept, conn::AddrIncoming},
-    Method, StatusCode,
-};
+#[cfg(not(target_os = "linux"))]
+use hyper::server::{accept::Accept, conn::AddrIncoming};
+use hyper::{header, Method, StatusCode};
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Serialize};
 #[cfg(not(target_os = "linux"))]
 use std::net::Ipv4Addr;
+#[cfg(not(target_os = "linux"))]
+use std::pin::Pin;
+#[cfg(not(target_os = "linux"))]
+use std::task::{Context, Poll};
+
 use std::{
     net::{Ipv6Addr, SocketAddr},
-    pin::Pin,
     sync::Arc,
-    task::{Context, Poll},
 };
 use tera::Tera;
 use tokio::sync::Mutex;
@@ -64,7 +65,7 @@ type AppStat = Arc<AppStats>;
 #[derive(Debug, Parser)]
 pub struct Cli {
     /// the redis url,start at "redis://"
-    #[clap(short, long, env = "REDIS_URL", default_value = "redis://10.10.0.2/0")]
+    #[clap(short, long, env = "REDIS_URL", default_value = "redis://localhost/0")]
     redis: String,
 
     /// the database url,start at "mysql://"
@@ -72,7 +73,7 @@ pub struct Cli {
         short,
         long,
         env = "DATABASE_URL",
-        default_value = "mysql://root:qiuqiu123@10.10.0.2/music_db"
+        default_value = "mysql://root:qiuqiu123@localhost/music_db"
     )]
     db: String,
 
@@ -129,6 +130,7 @@ fn setup_tera() -> Tera {
     let authors = include_str!("../templates/authors.tera");
     let base = include_str!("../templates/base.tera");
     let player = include_str!("../templates/player.tera");
+    let newplayer = include_str!("../templates/newplayer.tera");
     tera.add_raw_templates([
         ("index.tera", index),
         ("login.tera", login),
@@ -139,6 +141,7 @@ fn setup_tera() -> Tera {
         ("authors.tera", authors),
         ("base.tera", base),
         ("player.tera", player),
+        ("newplayer.tera", newplayer),
     ])
     .unwrap();
     tera
@@ -195,7 +198,7 @@ pub async fn app_main() -> eyre::Result<()> {
                 )
             }),
         )
-        .fallback_service(ServeDir::new("./static"))
+        // .fallback_service(ServeDir::new("./static"))
         .route_layer(
             CorsLayer::new()
                 .allow_methods([Method::GET, Method::POST])
@@ -228,11 +231,15 @@ pub async fn app_main() -> eyre::Result<()> {
 
     Ok(())
 }
+#[cfg(not(target_os = "linux"))]
 
 struct CombinedAddr {
     a: AddrIncoming,
     b: AddrIncoming,
 }
+
+#[cfg(not(target_os = "linux"))]
+
 impl Accept for CombinedAddr {
     type Conn = <AddrIncoming as Accept>::Conn;
     type Error = <AddrIncoming as Accept>::Error;
@@ -259,7 +266,7 @@ mod tests {
     use entities::*;
     #[tokio::test]
     async fn test_database() {
-        let db = Database::connect("mysql://root:qiuqiu123@10.10.0.2/music_db")
+        let db = Database::connect("mysql://root:qiuqiu123@localhost/music_db")
             .await
             .unwrap();
         let account_admin = account::ActiveModel {
@@ -272,7 +279,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_database_get() {
-        let db = Database::connect("mysql://root:qiuqiu123@10.10.0.2/music_db")
+        let db = Database::connect("mysql://root:qiuqiu123@localhost/music_db")
             .await
             .unwrap();
         let account_admin = Account::find().all(&db).await.unwrap();
@@ -283,12 +290,12 @@ mod tests {
     use redis::AsyncCommands;
     #[tokio::test]
     async fn test_redis() -> eyre::Result<()> {
-        let client = redis::Client::open("redis://10.10.0.2/0")?;
+        let client = redis::Client::open("redis://localhost/0")?;
         let mut con = client.get_async_connection().await?;
         con.set("hell", "world").await?;
         let hell: String = con.get("hell").await?;
         println!("{}", hell);
-        let client = redis::Client::open("redis://10.10.0.2/1")?;
+        let client = redis::Client::open("redis://localhost/1")?;
         let mut con = client.get_async_connection().await?;
         con.set("hell2", "world2").await?;
         let hell2: String = con.get("hell2").await?;
