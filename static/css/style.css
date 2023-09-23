@@ -127,7 +127,28 @@ a:hover {
 
 
 
+.max_container {
+    display: flex;
+    justify-content: space-between;
+    justify-items: stretch;
+    margin-top: 5px;
+}
 
+.half_container {
+    width: 48%;
+    display: flex;
+    justify-items: stretch;
+}
+
+.player {
+    width: 100%;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+.full {
+    width: 100%;
+}
 
 
 

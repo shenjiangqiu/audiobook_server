@@ -1,18 +1,26 @@
+use axum::headers::IfModifiedSince;
+use axum::response::Response;
+use axum::TypedHeader;
 use axum::{response::IntoResponse, routing::get, Router};
 use clap::Parser;
 use dotenv::dotenv;
 #[cfg(not(target_os = "linux"))]
 use hyper::server::{accept::Accept, conn::AddrIncoming};
 use hyper::{header, Method, StatusCode};
+use lazy_static::lazy_static;
+use mime::Mime;
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Serialize};
+use std::env;
 #[cfg(not(target_os = "linux"))]
 use std::net::Ipv4Addr;
 #[cfg(not(target_os = "linux"))]
 use std::pin::Pin;
+use std::str::FromStr;
 #[cfg(not(target_os = "linux"))]
 use std::task::{Context, Poll};
 
+use std::time::SystemTime;
 use std::{
     net::{Ipv6Addr, SocketAddr},
     sync::Arc,
@@ -36,6 +44,13 @@ mod music;
 pub(crate) mod progress;
 pub mod tools;
 mod webui;
+
+lazy_static! {
+    pub static ref BUILD_TIME: SystemTime = {
+        let build_sec: i64 = env!("BUILD_TIME").parse().unwrap();
+        SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(build_sec as u64)
+    };
+}
 
 #[derive(Serialize, Deserialize)]
 enum MathOp {
@@ -180,25 +195,29 @@ pub async fn app_main() -> eyre::Result<()> {
         .route("/", get(|| async { redirect("/webui/index").await }))
         .route(
             "/css/style.css",
-            get(|| async {
-                (
-                    StatusCode::OK,
-                    [(header::CONTENT_TYPE, "text/css")],
-                    include_str!("../static/css/style.css"),
-                )
-            }),
+            get(
+                |if_last_modified: Option<TypedHeader<axum::headers::IfModifiedSince>>| async move {
+                    let text = include_bytes!("../static/css/style.css");
+                    let text_type = TypedHeader(axum::headers::ContentType::from(
+                        Mime::from_str("text/css").unwrap(),
+                    ));
+
+                    cached_response(if_last_modified, text_type, text.to_vec())
+                },
+            ),
         )
         .route(
             "/favicon.ico",
-            get(|| async {
-                (
-                    StatusCode::OK,
-                    [(header::CONTENT_TYPE, "image/x-icon")],
-                    include_bytes!("../static/favicon.ico"),
-                )
-            }),
+            get(
+                |if_last_modified: Option<TypedHeader<axum::headers::IfModifiedSince>>| async move {
+                    let text = include_bytes!("../static/favicon.ico");
+                    let text_type = TypedHeader(axum::headers::ContentType::from(
+                        Mime::from_str("image/x-icon").unwrap(),
+                    ));
+                    cached_response(if_last_modified, text_type, text.to_vec())
+                },
+            ),
         )
-        // .fallback_service(ServeDir::new("./static"))
         .route_layer(
             CorsLayer::new()
                 .allow_methods([Method::GET, Method::POST])
@@ -231,6 +250,39 @@ pub async fn app_main() -> eyre::Result<()> {
 
     Ok(())
 }
+
+fn cached_response(
+    if_last_modified: Option<TypedHeader<IfModifiedSince>>,
+    text_type: TypedHeader<axum::headers::ContentType>,
+    text: Vec<u8>,
+) -> Response {
+    match if_last_modified {
+        Some(if_last_modified) => {
+            debug!("if_last_modified:{:?}", if_last_modified);
+            debug!("BUILD_TIME:{:?}", *BUILD_TIME);
+            if if_last_modified.is_modified(*BUILD_TIME) {
+                (
+                    StatusCode::OK,
+                    text_type,
+                    TypedHeader(axum::headers::LastModified::from(*BUILD_TIME)),
+                    text,
+                )
+                    .into_response()
+            } else {
+                // no modified
+                debug!("no modified");
+                (StatusCode::NOT_MODIFIED, "").into_response()
+            }
+        }
+        None => (
+            StatusCode::OK,
+            text_type,
+            TypedHeader(axum::headers::LastModified::from(*BUILD_TIME)),
+            text,
+        )
+            .into_response(),
+    }
+}
 #[cfg(not(target_os = "linux"))]
 
 struct CombinedAddr {
@@ -259,6 +311,8 @@ impl Accept for CombinedAddr {
 
 #[cfg(test)]
 mod tests {
+    use chrono::format::StrftimeItems;
+    use chrono::{DateTime, FixedOffset, Utc};
     use sea_orm::{Database, EntityTrait};
 
     use crate::entities;
@@ -302,5 +356,15 @@ mod tests {
         println!("{}", hell2);
 
         Ok(())
+    }
+
+    #[test]
+    fn test_build_time() {
+        let now: DateTime<Utc> = Utc::now();
+        let offset = FixedOffset::east_opt(0).unwrap(); // GMT
+        let now = now.with_timezone(&offset);
+        let items = StrftimeItems::new("%a, %d %b %Y %H:%M:%S GMT"); // Define the timestamp format
+        let formatted_date = now.format_with_items(items).to_string();
+        println!("{}", formatted_date);
     }
 }

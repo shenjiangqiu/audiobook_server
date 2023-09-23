@@ -1,30 +1,7 @@
 {%extends "base.tera"%}
 {%block content%}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<style>
-    .max_container {
-        display: flex;
-        justify-content: space-between;
-        justify-items: stretch;
-        margin-top: 5px;
-    }
 
-    .half_container {
-        width: 48%;
-        display: flex;
-        justify-items: stretch;
-    }
-
-    .player {
-        width: 100%;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-    }
-
-    .full {
-        width: 100%;
-    }
-</style>
 <h1 id="player_title">playing {{book.name}}-{{chapter_id}}</h1>
 <div>
     <div id="player" class="player">
@@ -50,7 +27,9 @@
         <div id="save_progress" class="half_container"><button onclick="on_save_progress_click()"
                 class="full">save_progress</button>
         </div>
-        <div class="half_container"><button id="play_bt" class="full" onclick="play_bt_click()"></button></div>
+        <div class="half_container" id="bt_div"><button id="play_bt" class="full"
+                onclick="play_bt_click()">play</button>
+        </div>
     </div>
 </div>
 <div>
@@ -118,10 +97,8 @@
     function play_bt_click() {
         if ($("#au").prop("paused")) {
             $("#au").trigger("play");
-            $("#play_bt").html("pause");
         } else {
             $("#au").trigger("pause");
-            $("#play_bt").html("play");
         }
     }
     function prev() {
@@ -136,7 +113,7 @@
         $("#au").prop("src", `/fetchbook/{{book.file_folder}}/${chapter_id_name}.m4a`);
         $("#au").trigger("play");
         $("#player_title").html("playing {{book.name}} " + chapterId);
-        $("#title").html("<h1>playing {{book.name}}</h1> " + chapterId);
+        $("#title").html("<h1>playing {{book.name}} " + chapterId + "</h1>");
         document.head.title = "playing {{book.name}} " + chapterId;
     }
 
@@ -153,7 +130,7 @@
 
         $("#au").trigger("play");
         $("#player_title").html("playing {{book.name}} " + chapterId);
-        $("#title").html("<h1>playing {{book.name}}</h1> " + chapterId);
+        $("#title").html("<h1>playing {{book.name}} " + chapterId + "</h1>");
         document.head.title = "playing {{book.name}} " + chapterId;
     }
 
@@ -163,20 +140,19 @@
             // play it
             $("#au").trigger("play");
         });
-        // set init state
-        if ($("#au").prop("paused")) {
-            $("#play_bt").html("play");
-        } else {
-            $("#play_bt").html("pause");
-        }
+
 
         $("#au").on("play", function () {
             // play it
             $("#play_bt").html("pause");
+            // set the play_bt backgroud to red
+            $("#play_bt").css("background-color", "red");
         });
         $("#au").on("pause", function () {
             // play it
             $("#play_bt").html("play");
+            // set the play_bt backgroud to green
+            $("#play_bt").css("background-color", "green");
         });
         // when the audio ends, play the next chapter
         $("#au").on("ended", function () {
