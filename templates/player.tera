@@ -136,7 +136,7 @@
         $("#au").prop("src", `/fetchbook/{{book.file_folder}}/${chapter_id_name}.m4a`);
         $("#au").trigger("play");
         $("#player_title").html("playing {{book.name}} " + chapterId);
-        $("#title").html("playing {{book.name}} " + chapterId);
+        $("#title").html("<h1>playing {{book.name}}</h1> " + chapterId);
         document.head.title = "playing {{book.name}} " + chapterId;
     }
 
@@ -153,7 +153,7 @@
 
         $("#au").trigger("play");
         $("#player_title").html("playing {{book.name}} " + chapterId);
-        $("#title").html("playing {{book.name}} " + chapterId);
+        $("#title").html("<h1>playing {{book.name}}</h1> " + chapterId);
         document.head.title = "playing {{book.name}} " + chapterId;
     }
 
