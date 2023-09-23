@@ -261,7 +261,7 @@ async fn author_detail_page(
 #[derive(Debug, serde::Deserialize)]
 struct PlayerPara {
     book_id: i32,
-    chapter_id: i32,
+    chapter_id: Option<i32>,
 }
 
 async fn player_page(
@@ -281,7 +281,7 @@ async fn player_page(
                 .unwrap();
             let progress =
                 get_or_create_progress(&state.connections.db, data.user_id, book_id).await;
-
+            let chapter_id = chapter_id.unwrap_or(progress.chapter_no);
             let mut context = tera::Context::new();
             // data for base
             context.insert("title", &format!("Playing {}-{}", book.name, chapter_id));
@@ -329,7 +329,7 @@ async fn newplayer_page(
                 .unwrap();
             let progress =
                 get_or_create_progress(&state.connections.db, data.user_id, book_id).await;
-
+            let chapter_id = chapter_id.unwrap_or(progress.chapter_no);
             let mut context = tera::Context::new();
             // data for base
             context.insert("title", &format!("Playing {}-{}", book.name, chapter_id));

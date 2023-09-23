@@ -24,8 +24,9 @@
     } #}
     <div>name: {{book.name}}</div>
     <div>author:<a href="/webui/author_detail?id={{author.id}}">{{author.name}}</a> </div>
-    <div><a href="/webui/player?book_id={{book.id}}&chapter_id={{progress.chapter_no}}">last read:</a> chapter:
-        {{progress.chapter_no}}, time:{{progress.progress /60 | round}}:{{progress.progress % 60 |round }}</div>
+    <div><a href="/webui/player?book_id={{book.id}}">last read: chapter:
+            {{progress.chapter_no}}, time:{{progress.progress /60 | round}}:{{progress.progress % 60 |round }}</a>
+    </div>
     <div>chapters: {{book.chapters}}</div>
     <div class="container">
         {%for chapter in range(start=1,end=(book.chapters+1))%}

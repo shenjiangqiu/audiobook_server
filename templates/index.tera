@@ -13,14 +13,18 @@
         progress: f64,
         progress_id: i32,
         } #}
-        {%for book in recent_played%}
-        <li><a href="/webui/player?book_id={{book.book_id}}&chapter_id={{book.chapter_id}}">
-                <p>{{book.book_name}}</p>
-                <p>chapter:{{book.chapter_id}}</p>
-                <p>time {{book.progress /60 | round}}:{{book.progress % 60 |round }}</p>
+        <div class="container">
+            {%for book in recent_played%}
+            <a href="/webui/player?book_id={{book.book_id}}">
+                <div>
+                    <p>{{book.book_name}}</p>
+                    <p>chapter:{{book.chapter_id}}</p>
+                    <p>time {{book.progress /60 | round}}:{{book.progress % 60 |round }}</p>
+                </div>
             </a>
-        </li>
-        {%endfor%}
+            {%endfor%}
+        </div>
+
 
     </ul>
 </div>
