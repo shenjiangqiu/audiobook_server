@@ -86,7 +86,10 @@ mod tests {
     #[tokio::test]
     async fn test_link() {
         let src_dir = "./test_dir";
+
         let target_dir = "./test_dir2";
+        //delete test_dir2
+        tokio::fs::remove_dir_all(target_dir).await.unwrap();
         super::arrange_new_folder(src_dir, target_dir).await;
     }
 }

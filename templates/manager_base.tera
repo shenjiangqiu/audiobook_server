@@ -1,0 +1,12 @@
+{%extends "base.tera"%}
+{%block content%}
+<div class="list">
+    {%if admin %}
+    {%block admin_content%}{%endblock admin_content%}
+    {% else %}
+    <h1>Only Admin have access to this page</h1>
+    {%endif%}
+</div>
+
+
+{%endblock content%}

@@ -1,4 +1,3 @@
-
 body {
     background-color: #9b9595;
     color: #333;
@@ -8,11 +7,12 @@ body {
     font-size: 5vw;
 }
 
-    
-.rounded{
+
+.rounded {
     border-radius: 10px;
 }
-button{
+
+button {
     background-color: #333;
     color: #fff;
     padding: 5px 5px;
@@ -21,14 +21,15 @@ button{
     cursor: pointer;
     font-size: 5vw;
 }
-button:hover{
+
+button:hover {
     background-color: #fff;
     color: #333;
     border: 1px solid #333;
 }
 
 
-#audioplayer{
+#audioplayer {
     width: 100%;
 }
 
@@ -52,16 +53,29 @@ h1 {
 
 .welcome {
     display: flex;
-    justify-content: space-between;
+    justify-content: start;
     margin-bottom: 20px;
+    margin-left: 20px;
 }
 
 .username {
     font-weight: bold;
+    background-color: rgb(88, 99, 95);
+    border: 1px solid rgb(88, 99, 95);
+    color: aliceblue;
+    border-radius: 10px;
+    margin: 20px;
+    padding: 10px;
 }
 
-.logout a {
+.logout {
     color: #333;
+    background-color: rgb(58, 37, 49);
+    border: 1px solid rgb(58, 37, 49);
+    color: aliceblue;
+    border-radius: 10px;
+    margin: 20px;
+    padding: 10px;
 }
 
 #nav {
@@ -110,9 +124,11 @@ a:hover {
 .player audio {
     width: 100%;
 }
-.bt_div{
+
+.bt_div {
     margin: 2px;
 }
+
 .player {
     width: 100%;
     margin-bottom: 20px;
@@ -156,21 +172,23 @@ a:hover {
     body {
         font-size: 1.5em;
     }
-  
+
 }
+
 @media screen and (min-width: 1024px) {
-    button{
-    font-size: 1.5em;
+    button {
+        font-size: 1.5em;
     }
 }
 
 @media screen and (min-width: 1024px) {
     h1 {
-    font-size: 2.5em;
+        font-size: 2.5em;
+    }
 }
-}
+
 @media screen and (min-width: 1024px) {
     .list a {
-    font-size: 1em;
-}
+        font-size: 1em;
+    }
 }

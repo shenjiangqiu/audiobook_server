@@ -2,31 +2,17 @@
 {%block content%}
 <h1>Recent played:</h1>
 <div class="list">
-
-    <ul>
-        {# struct RecentData {
-        book_id: i32,
-        book_name: String,
-        author_id: i32,
-        author: String,
-        chapter_id: i32,
-        progress: f64,
-        progress_id: i32,
-        } #}
-        <div class="container">
-            {%for book in recent_played%}
-            <a href="/webui/player?book_id={{book.book_id}}">
-                <div>
-                    <p>{{book.book_name}}</p>
-                    <p>chapter:{{book.chapter_id}}</p>
-                    <p>time {{book.progress /60 | round}}:{{book.progress % 60 |round }}</p>
-                </div>
-            </a>
-            {%endfor%}
-        </div>
-
-
-    </ul>
+    <div class="container">
+        {%for book in recent_played%}
+        <a href="/webui/player?book_id={{book.book_id}}">
+            <div>
+                <p>{{book.book_name}}</p>
+                <p>chapter:{{book.chapter_id}}</p>
+                <p>time {{book.progress /60 | round}}:{{book.progress % 60 |round }}</p>
+            </div>
+        </a>
+        {%endfor%}
+    </div>
 </div>
 
 

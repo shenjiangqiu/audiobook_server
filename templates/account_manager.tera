@@ -1,0 +1,10 @@
+{%extends "manager_base.tera"%}
+{%block admin_content%}
+<h1>Account Manager</h1>
+<div class="list">
+
+
+</div>
+
+
+{%endblock admin_content%}

@@ -10,6 +10,7 @@ use axum::{
 };
 use hyper::StatusCode;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use tera::Tera;
 use tracing::{error, info};
 
 use crate::{
@@ -28,6 +29,9 @@ pub(crate) fn route(state: AppStat) -> Router<AppStat> {
         .route("/author_detail", get(author_detail_page))
         .route("/player", get(player_page))
         .route("/newplayer", get(newplayer_page))
+        .route("/manager", get(manager_page))
+        .route("/book_manager", get(book_manager_page))
+        .route("/account_manager", get(account_manager_page))
         .route_layer(axum::middleware::from_fn_with_state(
             state,
             super::middleware::webui_auth::webui_auth,
@@ -355,6 +359,68 @@ async fn newplayer_page(
                     (StatusCode::INTERNAL_SERVER_ERROR, "render error")
                 })
                 .into_response()
+        }
+        _ => login_html(&state),
+    }
+}
+
+async fn generate_manager_page(data: &LoginInfo, tera: &Tera, template: &str) -> Response {
+    let mut context = tera::Context::new();
+
+    match data.role_level {
+        0 => {
+            context.insert("admin", &true);
+        }
+        1 => {
+            context.insert("admin", &false);
+        }
+        _ => {
+            panic!("no such role")
+        }
+    }
+    // data for base
+    context.insert("title", "manager");
+    context.insert("user_name", &data.user_name);
+
+    tera.render(template, &context)
+        .map(|html| (StatusCode::OK, Html(html)))
+        .map_err(|e| {
+            error!("render error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "render error")
+        })
+        .into_response()
+}
+async fn manager_page(
+    State(state): State<AppStat>,
+    login_status: PasskeyCheckResult,
+) -> impl IntoResponse {
+    match login_status {
+        PasskeyCheckResult::LogInSucceed(data) => {
+            generate_manager_page(&data, &state.tera, "manager.tera").await
+        }
+        _ => login_html(&state),
+    }
+}
+
+async fn book_manager_page(
+    State(state): State<AppStat>,
+    login_status: PasskeyCheckResult,
+) -> impl IntoResponse {
+    match login_status {
+        PasskeyCheckResult::LogInSucceed(data) => {
+            generate_manager_page(&data, &state.tera, "book_manager.tera").await
+        }
+        _ => login_html(&state),
+    }
+}
+
+async fn account_manager_page(
+    State(state): State<AppStat>,
+    login_status: PasskeyCheckResult,
+) -> impl IntoResponse {
+    match login_status {
+        PasskeyCheckResult::LogInSucceed(data) => {
+            generate_manager_page(&data, &state.tera, "account_manager.tera").await
         }
         _ => login_html(&state),
     }

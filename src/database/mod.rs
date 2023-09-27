@@ -4,7 +4,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_database() -> eyre::Result<()> {
-        let _db = Database::connect("mysql://root:qiuqiu123@10.10.0.2").await?;
+        let _db = Database::connect("mysql://root:qiuqiu123@localhost").await?;
         Ok(())
     }
 }

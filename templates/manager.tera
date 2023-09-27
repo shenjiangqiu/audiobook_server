@@ -1,0 +1,16 @@
+{%extends "manager_base.tera"%}
+{%block admin_content%}
+<h1>Manager</h1>
+<div class="list">
+    <div class="container">
+        <a href="/webui/book_manager">
+            <div><button>Book Manager</button></div>
+        </a>
+        <a href="/webui/account_manager">
+            <div><button>Account Manager</button></div>
+        </a>
+    </div>
+</div>
+
+
+{%endblock admin_content%}
