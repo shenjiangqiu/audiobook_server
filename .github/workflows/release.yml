@@ -92,28 +92,9 @@ jobs:
     - name: Strip release binary (linux, macos and macos-arm)
       if: matrix.build == 'linux' || matrix.os == 'macos'
       run: |
-       strip "target/${{ matrix.target }}/release/account_manager"
-       strip "target/${{ matrix.target }}/release/audiobook_server"
-       strip "target/${{ matrix.target }}/release/create_new_book"
-
-    - name: Strip release binary (arm)
-      if: matrix.build == 'linux-arm'
-      run: |
-        docker run --rm -v \
-          "$PWD/target:/target:Z" \
-          rustembedded/cross:arm-unknown-linux-gnueabihf \
-          arm-linux-gnueabihf-strip \
-          /target/arm-unknown-linux-gnueabihf/release/account_manager
-        docker run --rm -v \
-          "$PWD/target:/target:Z" \
-          rustembedded/cross:arm-unknown-linux-gnueabihf \
-          arm-linux-gnueabihf-strip \
-          /target/arm-unknown-linux-gnueabihf/release/audiobook_server
-        docker run --rm -v \
-          "$PWD/target:/target:Z" \
-          rustembedded/cross:arm-unknown-linux-gnueabihf \
-          arm-linux-gnueabihf-strip \
-          /target/arm-unknown-linux-gnueabihf/release/create_new_book
+       strip "target/release/account_manager"
+       strip "target/release/audiobook_server"
+       strip "target/release/create_new_book"
 
     - name: Build archive
       shell: bash
@@ -124,9 +105,9 @@ jobs:
 
 
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          cp "target/${{ matrix.target }}/release/account_manager.exe" "$staging/"
-          cp "target/${{ matrix.target }}/release/audiobook_server.exe" "$staging/"
-          cp "target/${{ matrix.target }}/release/create_new_book.exe" "$staging/"
+          cp "target/release/account_manager.exe" "$staging/"
+          cp "target/release/audiobook_server.exe" "$staging/"
+          cp "target/release/create_new_book.exe" "$staging/"
 
           7z a "$staging.zip" "$staging"
           certutil -hashfile "$staging.zip" SHA256 > "$staging.zip.sha256"
@@ -134,9 +115,9 @@ jobs:
           echo "ASSET_SUM=$staging.zip.sha256" >> $GITHUB_ENV
         else
           # The man page is only generated on Unix systems. ¯\_(ツ)_/¯
-          cp "target/${{ matrix.target }}/release/account_manager" "$staging/"
-          cp "target/${{ matrix.target }}/release/audiobook_server" "$staging/"
-          cp "target/${{ matrix.target }}/release/create_new_book" "$staging/"
+          cp "target/release/account_manager" "$staging/"
+          cp "target/release/audiobook_server" "$staging/"
+          cp "target/release/create_new_book" "$staging/"
           tar czf "$staging.tar.gz" "$staging"
           shasum -a 256 "$staging.tar.gz" > "$staging.tar.gz.sha256"
           echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
