@@ -1,10 +1,19 @@
 use std::path::{Path, PathBuf};
 
+use crate::entities::{prelude::*, *};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use tracing::{debug, info};
 pub async fn arrange_new_folder(src_dir: impl AsRef<Path>, target_dir: impl AsRef<Path>) -> i32 {
+    debug!(
+        "moving {:?} target_dir: {:?}",
+        src_dir.as_ref(),
+        target_dir.as_ref()
+    );
     let files = get_files_in_dir(src_dir);
     let count = files.len();
     // create target dir if not exists
     std::fs::create_dir_all(target_dir.as_ref()).unwrap();
+
     for (src, target_index) in files.into_iter().zip(1..) {
         // create a hard link from src to target_dir, with new filename target_index+src.ext
         let target = target_dir.as_ref().join(format!(
@@ -57,6 +66,56 @@ fn get_files_in_dir(dir: impl AsRef<Path>) -> Vec<PathBuf> {
     out
 }
 
+pub async fn create_new_book(
+    author_name: String,
+    new_book_name: String,
+    book_dir: &Path,
+    source_dir: &Path,
+    db: &sea_orm::DatabaseConnection,
+) -> eyre::Result<()> {
+    let db_book_dir = format!("{}/{}", author_name, new_book_name);
+    // let target_dir = format!("{:?}/{}/{}", book_dir, author_name, new_book_name);
+    let target_dir = book_dir.join(&author_name).join(&new_book_name);
+    let count = arrange_new_folder(source_dir, target_dir).await;
+    // create the book in db
+    // first create the author
+    let current_author = Author::find()
+        .filter(author::Column::Name.eq(&author_name))
+        .one(db)
+        .await?;
+    // if it's none, insert a new one
+    let author_id = match current_author {
+        Some(author) => author.id,
+        None => {
+            let author = Author::insert(author::ActiveModel {
+                name: sea_orm::ActiveValue::Set(author_name),
+                avatar: sea_orm::ActiveValue::Set("".to_string()),
+                description: sea_orm::ActiveValue::Set("".to_string()),
+
+                ..Default::default()
+            })
+            .exec(db)
+            .await?;
+            author.last_insert_id
+        }
+    };
+
+    // insert the book
+    let book = Music::insert(music::ActiveModel {
+        name: sea_orm::ActiveValue::Set(new_book_name),
+        author_id: sea_orm::ActiveValue::Set(author_id),
+        chapters: sea_orm::ActiveValue::Set(count),
+        file_folder: sea_orm::ActiveValue::Set(db_book_dir.clone()),
+        ..Default::default()
+    })
+    .exec(db)
+    .await?;
+    let book_id = book.last_insert_id;
+    info!("book created:{}", book_id);
+    info!("book dir:{}", db_book_dir);
+    info!("book chapters:{}", count);
+    Ok(())
+}
 #[cfg(test)]
 mod tests {
     use super::get_files_in_dir;

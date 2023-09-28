@@ -1,6 +1,9 @@
+use axum::headers::ContentType;
+use axum::TypedHeader;
 use axum::{extract::State, response::IntoResponse, routing::post, Json};
 use cookie::time::Duration;
 use cookie::Cookie;
+use hyper::header::CONTENT_TYPE;
 use hyper::{header::LOCATION, HeaderMap, StatusCode};
 use redis::AsyncCommands;
 use sea_orm::{ActiveValue, ColumnTrait, EntityTrait, QueryFilter};
@@ -103,6 +106,11 @@ struct UserLoginInfo {
     username: String,
     password: String,
 }
+#[derive(Debug, serde::Serialize)]
+struct LoginResult {
+    code: i32,
+    message: String,
+}
 async fn login(
     State(state): State<AppStat>,
     cookies: Cookies,
@@ -142,9 +150,11 @@ async fn login(
                 cookies.add(cookie);
 
                 //redirect to /
-                let mut headers = HeaderMap::new();
-                headers.insert(LOCATION, "/".parse().unwrap());
-                (headers, "login success")
+                debug!("login success");
+                Json(LoginResult {
+                    code: 0,
+                    message: "login success".to_string(),
+                })
             } else {
                 // wrong password
                 debug!(
@@ -153,14 +163,20 @@ async fn login(
                 );
                 let mut headers = HeaderMap::new();
                 headers.insert(LOCATION, "/".parse().unwrap());
-                (headers, "Wrong Password")
+                Json(LoginResult {
+                    code: 1,
+                    message: "wrong password".to_string(),
+                })
             }
         }
         None => {
             // no such user
             let mut headers = HeaderMap::new();
             headers.insert(LOCATION, "/".parse().unwrap());
-            (headers, "No Such User")
+            Json(LoginResult {
+                code: 2,
+                message: "no such user".to_string(),
+            })
         }
     }
 }

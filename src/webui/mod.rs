@@ -1,3 +1,5 @@
+use std::env;
+
 use crate::{
     entities::{prelude::*, *},
     progress::get_or_create_progress,
@@ -5,11 +7,11 @@ use crate::{
 use axum::{
     extract::{Query, State},
     response::{Html, IntoResponse, Response},
-    routing::get,
-    Router,
+    routing::{get, post},
+    Form, Router,
 };
 use hyper::StatusCode;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, QueryFilter};
 use tera::Tera;
 use tracing::{error, info};
 
@@ -32,6 +34,11 @@ pub(crate) fn route(state: AppStat) -> Router<AppStat> {
         .route("/manager", get(manager_page))
         .route("/book_manager", get(book_manager_page))
         .route("/account_manager", get(account_manager_page))
+        .route("/user_op", get(user_op_page))
+        .route("/update_user_page", get(update_user_page))
+        .route("/create_user_action", post(create_user_action_page))
+        .route("/delete_user_action", post(delete_user_action_page))
+        .route("/update_user_action", post(update_user_action_page))
         .route_layer(axum::middleware::from_fn_with_state(
             state,
             super::middleware::webui_auth::webui_auth,
@@ -363,8 +370,12 @@ async fn newplayer_page(
         _ => login_html(&state),
     }
 }
-
-async fn generate_manager_page(data: &LoginInfo, tera: &Tera, template: &str) -> Response {
+async fn generate_manager_page_with_data(
+    data: &LoginInfo,
+    tera: &Tera,
+    template: &str,
+    tera_context: impl IntoIterator<Item = (String, tera::Value)>,
+) -> Response {
     let mut context = tera::Context::new();
 
     match data.role_level {
@@ -382,6 +393,11 @@ async fn generate_manager_page(data: &LoginInfo, tera: &Tera, template: &str) ->
     context.insert("title", "manager");
     context.insert("user_name", &data.user_name);
 
+    // data for template
+    for (k, v) in tera_context {
+        context.insert(k, &v);
+    }
+
     tera.render(template, &context)
         .map(|html| (StatusCode::OK, Html(html)))
         .map_err(|e| {
@@ -390,6 +406,11 @@ async fn generate_manager_page(data: &LoginInfo, tera: &Tera, template: &str) ->
         })
         .into_response()
 }
+
+async fn generate_manager_page(data: &LoginInfo, tera: &Tera, template: &str) -> Response {
+    generate_manager_page_with_data(data, tera, template, []).await
+}
+
 async fn manager_page(
     State(state): State<AppStat>,
     login_status: PasskeyCheckResult,
@@ -408,7 +429,16 @@ async fn book_manager_page(
 ) -> impl IntoResponse {
     match login_status {
         PasskeyCheckResult::LogInSucceed(data) => {
-            generate_manager_page(&data, &state.tera, "book_manager.tera").await
+            generate_manager_page_with_data(
+                &data,
+                &state.tera,
+                "book_manager.tera",
+                [(
+                    "current_dir".to_string(),
+                    tera::to_value(env::current_dir().unwrap()).unwrap(),
+                )],
+            )
+            .await
         }
         _ => login_html(&state),
     }
@@ -425,6 +455,324 @@ async fn account_manager_page(
         _ => login_html(&state),
     }
 }
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+enum UserOpData {
+    AddUser,
+    DeleteUser,
+    UpdateUser,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct InputPara {
+    op: UserOpData,
+}
+
+async fn user_op_page(
+    State(state): State<AppStat>,
+    login_status: PasskeyCheckResult,
+    form: Form<InputPara>,
+) -> Response {
+    match login_status {
+        PasskeyCheckResult::LogInSucceed(data) => {
+            let user_list = match &form.0.op {
+                UserOpData::DeleteUser | UserOpData::UpdateUser => {
+                    let users = Account::find().all(&state.connections.db).await.unwrap();
+                    Some(users)
+                }
+                _ => None,
+            };
+            generate_manager_page_with_data(
+                &data,
+                &state.tera,
+                "user_op.tera",
+                [
+                    ("data".to_string(), tera::to_value(form.0.op).unwrap()),
+                    ("user_list".to_string(), tera::to_value(user_list).unwrap()),
+                ],
+            )
+            .await
+        }
+        _ => login_html(&state),
+    }
+}
+#[derive(Debug, serde::Deserialize)]
+struct UpdateUserForm {
+    id: i32,
+}
+async fn update_user_page(
+    State(state): State<AppStat>,
+    login_status: PasskeyCheckResult,
+    form: Form<UpdateUserForm>,
+) -> Response {
+    match login_status {
+        PasskeyCheckResult::LogInSucceed(data) => {
+            let user = Account::find_by_id(form.0.id)
+                .one(&state.connections.db)
+                .await
+                .unwrap()
+                .unwrap();
+            let admin_selected_str = match user.role_level {
+                0 => "selected='selected'",
+                1 => "",
+                _ => panic!("no such role"),
+            };
+            let user_selected_str = match user.role_level {
+                0 => "",
+                1 => "selected='selected'",
+                _ => panic!("no such role"),
+            };
+            let html = format!(
+                "<h1>update user</h1>
+            <form action='/webui/update_user_action' method='post'>
+            <lable>username</lable>
+            <input type='text' name='name' value='{}'>
+            <label>password</label>
+            <input type='password' name='password' value=''>
+            <label>role</label>
+            <select name='role' value='{}'>
+                <option {} value='Admin'>Admin</option>
+                <option {} value='User'>User</option>
+            </select>
+            <input type='hidden' name='id' value='{}'>
+            <button type='submit'>submit</button>
+            </form>
+            ",
+                user.name,
+                match user.role_level {
+                    0 => "Admin",
+                    1 => "User",
+                    _ => panic!("no such role"),
+                },
+                admin_selected_str,
+                user_selected_str,
+                user.id
+            );
+            generate_manager_page_with_data(
+                &data,
+                &state.tera,
+                "simple.tera",
+                [("data".to_string(), tera::to_value(html).unwrap())],
+            )
+            .await
+        }
+        _ => login_html(&state),
+    }
+}
+#[derive(Debug, serde::Deserialize)]
+enum Role {
+    Admin,
+    User,
+}
+#[derive(Debug, serde::Deserialize)]
+struct CreateUserForm {
+    username: String,
+    password: String,
+    role: Role,
+}
+async fn create_user_action_page(
+    State(state): State<AppStat>,
+    login_status: PasskeyCheckResult,
+    form: Form<CreateUserForm>,
+) -> Response {
+    match login_status {
+        PasskeyCheckResult::LogInSucceed(data) => {
+            let form = form.0;
+            let password = md5::compute(form.password);
+            let password = format!("{:x}", password);
+            let active = account::ActiveModel {
+                name: sea_orm::ActiveValue::Set(form.username),
+                password: ActiveValue::Set(password),
+                role_level: ActiveValue::Set(match form.role {
+                    Role::Admin => 0,
+                    Role::User => 1,
+                }),
+                ..Default::default()
+            };
+            let result = active.save(&state.connections.db).await;
+            match result {
+                Ok(_) => {
+                    generate_manager_page_with_data(
+                        &data,
+                        &state.tera,
+                        "simple.tera",
+                        [(
+                            "data".to_string(),
+                            tera::to_value(
+                                "<div><h1>success</h1></div>
+                                <a href='/webui/index'>
+                                    <div>
+                                        <button>Home</button>
+                                    </div>
+                                </a>",
+                            )
+                            .unwrap(),
+                        )],
+                    )
+                    .await
+                }
+                Err(_) => {
+                    generate_manager_page_with_data(
+                        &data,
+                        &state.tera,
+                        "simple.tera",
+                        [(
+                            "data".to_string(),
+                            tera::to_value(
+                                "<div><h1>failed, already exist</h1></div>
+                        <a href='/webui/index'>
+                            <div>
+                                <button>Home</button>
+                            </div>
+                        </a>",
+                            )
+                            .unwrap(),
+                        )],
+                    )
+                    .await
+                }
+            }
+        }
+        _ => login_html(&state),
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct DeleteForm {
+    id: i32,
+}
+async fn delete_user_action_page(
+    State(state): State<AppStat>,
+    login_status: PasskeyCheckResult,
+    form: Form<DeleteForm>,
+) -> Response {
+    match login_status {
+        PasskeyCheckResult::LogInSucceed(data) => {
+            let form = form.0;
+
+            let result = Account::delete_by_id(form.id)
+                .exec(&state.connections.db)
+                .await;
+            match result {
+                Ok(_) => {
+                    generate_manager_page_with_data(
+                        &data,
+                        &state.tera,
+                        "simple.tera",
+                        [(
+                            "data".to_string(),
+                            tera::to_value(
+                                "<div><h1>success</h1></div>
+                                <a href='/webui/index'>
+                                    <div>
+                                        <button>Home</button>
+                                    </div>
+                                </a>",
+                            )
+                            .unwrap(),
+                        )],
+                    )
+                    .await
+                }
+                Err(_) => {
+                    generate_manager_page_with_data(
+                        &data,
+                        &state.tera,
+                        "simple.tera",
+                        [(
+                            "data".to_string(),
+                            tera::to_value(
+                                "<div><h1>failed</h1></div>
+                        <a href='/webui/index'>
+                            <div>
+                                <button>Home</button>
+                            </div>
+                        </a>",
+                            )
+                            .unwrap(),
+                        )],
+                    )
+                    .await
+                }
+            }
+        }
+        _ => login_html(&state),
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct UpdateActionForm {
+    id: i32,
+    name: String,
+    password: String,
+    role: Role,
+}
+async fn update_user_action_page(
+    State(state): State<AppStat>,
+    login_status: PasskeyCheckResult,
+    form: Form<UpdateActionForm>,
+) -> Response {
+    match login_status {
+        PasskeyCheckResult::LogInSucceed(data) => {
+            let form = form.0;
+            let password = md5::compute(form.password);
+            let password = format!("{:x}", password);
+            let active = account::ActiveModel {
+                id: ActiveValue::Unchanged(form.id),
+                name: sea_orm::ActiveValue::Set(form.name),
+                password: ActiveValue::Set(password),
+                role_level: ActiveValue::Set(match form.role {
+                    Role::Admin => 0,
+                    Role::User => 1,
+                }),
+            };
+            let result = active.save(&state.connections.db).await;
+
+            match result {
+                Ok(_) => {
+                    generate_manager_page_with_data(
+                        &data,
+                        &state.tera,
+                        "simple.tera",
+                        [(
+                            "data".to_string(),
+                            tera::to_value(
+                                "<div><h1>success</h1></div>
+                                <a href='/webui/index'>
+                                    <div>
+                                        <button>Home</button>
+                                    </div>
+                                </a>",
+                            )
+                            .unwrap(),
+                        )],
+                    )
+                    .await
+                }
+                Err(_) => {
+                    generate_manager_page_with_data(
+                        &data,
+                        &state.tera,
+                        "simple.tera",
+                        [(
+                            "data".to_string(),
+                            tera::to_value(
+                                "<div><h1>failed</h1></div>
+                        <a href='/webui/index'>
+                            <div>
+                                <button>Home</button>
+                            </div>
+                        </a>",
+                            )
+                            .unwrap(),
+                        )],
+                    )
+                    .await
+                }
+            }
+        }
+        _ => login_html(&state),
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -433,5 +781,26 @@ mod tests {
         let name = 12;
         let name = format!("{:04}", name);
         assert_eq!(name, "0012");
+    }
+
+    #[derive(serde::Serialize)]
+    struct O {
+        a: Option<A>,
+    }
+    #[derive(serde::Serialize)]
+    enum A {
+        B { a: i32 },
+        C(i32),
+        D,
+    }
+    #[test]
+    fn test_json() {
+        let a = A::B { a: 1 };
+        let b = A::C(30);
+        println!("{}", serde_json::to_string(&a).unwrap());
+        println!("{}", serde_json::to_string(&b).unwrap());
+        println!("{}", serde_json::to_string(&A::D).unwrap());
+        println!("{}", serde_json::to_string(&O { a: Some(a) }).unwrap());
+        println!("{}", serde_json::to_string(&O { a: None }).unwrap());
     }
 }

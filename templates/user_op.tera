@@ -1,0 +1,49 @@
+{%extends "manager_base.tera"%}
+{%block admin_content%}
+<a href="/webui/account_manager">
+    <h1>Account Manager</h1>
+</a>
+{%if data == "AddUser"%}
+<h2>Add user</h2>
+<form action="/webui/create_user_action" method="post">
+    <div>
+        <label for="username">username</label>
+        <input type="text" class="form-control" id="username" placeholder="username" name="username">
+    </div>
+    <div>
+        <label for="password">password</label>
+        <input type="password" class="form-control" id="password" placeholder="password" name="password">
+    </div>
+    <div>
+        <input type="radio" id="admin" name="role" value="Admin">
+        <label for="admin">admin</label>
+    </div>
+    <div>
+        <input type="radio" id="user" name="role" value="User">
+        <label for="user">user</label>
+    </div>
+    <div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</form>
+{%endif%}
+{%if data == "DeleteUser"%}
+<h1>select deleted user</h1>
+{%for u in user_list%}
+<form action="/webui/delete_user_action" method="post">
+    <input type="hidden" name="id" value="{{u.id}}">
+    <button type="submit" value="{{u.name}}">{{u.name}}</button>
+</form>
+
+{%endfor%}
+{%endif%}
+{%if data == "UpdateUser"%}
+<h1>select the user to update</h1>
+{%for u in user_list%}
+<a href="/webui/update_user_page?id={{u.id}}"><button value="{{u.name}}">{{u.name}}</button></a>
+{%endfor%}
+{%endif%}
+
+
+
+{%endblock admin_content%}

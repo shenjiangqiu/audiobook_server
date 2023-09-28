@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use std::env;
 #[cfg(not(target_os = "linux"))]
 use std::net::Ipv4Addr;
+use std::path::PathBuf;
 #[cfg(not(target_os = "linux"))]
 use std::pin::Pin;
 use std::str::FromStr;
@@ -63,6 +64,7 @@ enum MathOp {
 pub(crate) struct AppStats {
     pub tera: Tera,
     pub connections: AppConnections,
+    pub book_dir: PathBuf,
 }
 pub(crate) struct AppConnections {
     pub db: DatabaseConnection,
@@ -150,6 +152,8 @@ fn setup_tera() -> Tera {
     let book_manager = include_str!("../templates/book_manager.tera");
     let account_manager = include_str!("../templates/account_manager.tera");
     let manager_base = include_str!("../templates/manager_base.tera");
+    let user_op = include_str!("../templates/user_op.tera");
+    let simple = include_str!("../templates/simple.tera");
     tera.add_raw_templates([
         ("index.tera", index),
         ("login.tera", login),
@@ -165,6 +169,8 @@ fn setup_tera() -> Tera {
         ("book_manager.tera", book_manager),
         ("account_manager.tera", account_manager),
         ("manager_base.tera", manager_base),
+        ("user_op.tera", user_op),
+        ("simple.tera", simple),
     ])
     .unwrap();
     tera
@@ -185,6 +191,7 @@ pub async fn app_main() -> eyre::Result<()> {
     let stat: AppStat = Arc::new(AppStats {
         tera: setup_tera(),
         connections: AppConnections::new(db, redis),
+        book_dir: PathBuf::from(cli.book_dir.clone()),
     });
     let fetch_book_router = Router::new()
         .nest_service("/fetchbook", ServeDir::new(cli.book_dir))
@@ -198,6 +205,7 @@ pub async fn app_main() -> eyre::Result<()> {
         .nest("/music", music::route(stat.clone()))
         .nest("/progress", progress::route(stat.clone()))
         .nest("/webui", webui::route(stat.clone()))
+        .nest("/management", management::route(stat.clone()))
         .merge(fetch_book_router)
         .route_layer(CookieManagerLayer::new()) // above route need login auth, so need cookie service
         .route("/", get(|| async { redirect("/webui/index").await }))
@@ -321,11 +329,6 @@ impl Accept for CombinedAddr {
 mod tests {
     use chrono::format::StrftimeItems;
     use chrono::{DateTime, FixedOffset, Utc};
-    use sea_orm::{Database, EntityTrait};
-
-    use crate::entities;
-    use entities::prelude::*;
-    use entities::*;
 
     #[tokio::test]
     async fn test_database() {
@@ -350,7 +353,6 @@ mod tests {
         //     println!("{:?}", account);
         // }
     }
-    use redis::AsyncCommands;
     #[tokio::test]
     async fn test_redis() -> eyre::Result<()> {
         // let client = redis::Client::open("redis://localhost/0")?;

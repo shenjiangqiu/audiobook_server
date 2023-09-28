@@ -44,19 +44,26 @@
                     dataType: "text",
                     contentType: "application/json",
                     success: function (response) {
-                        // Process the response here
                         console.log(response);
-                        // Redirect to another page if needed
-                        $("#login_info").html("logout success, will go to Home in 1 seconds");
-                        setTimeout(function () {
-                            window.location.href = "/webui/index";
-                        }, 1000);
+                        response = JSON.parse(response);
+                        // Process the response here
+                        if (response.code == 0) {
+                            console.log(response);
+                            // Redirect to another page if needed
+                            $("#login_info").html("login success, will go to Home in 1 seconds");
+                            setTimeout(function () {
+                                window.location.href = "/webui/index";
+                            }, 1000);
+                        } else {
+                            // Handle error here
+                            console.error(response);
+                            $("#login_info").html("login failed, please try again: error: " + response.message);
+                        }
+
                     },
                     error: function (xhr, status, error) {
                         // Handle error here
-                        console.error(error);
                         $("#login_info").html("login failed, please try again: error: " + error);
-
                     }
                 });
             }

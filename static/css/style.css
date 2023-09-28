@@ -140,7 +140,16 @@ a:hover {
     justify-items: stretch;
     flex-wrap: wrap;
 }
-
+.file{
+    border: 1px solid #333;
+    border-radius: 10px;
+}
+.dir{
+    border: 1px solid #333;
+    border-radius: 10px;
+    background-color: rgb(88, 99, 95);
+    color: aliceblue;
+}
 
 
 .max_container {

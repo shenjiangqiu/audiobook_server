@@ -2,7 +2,11 @@
 {%block admin_content%}
 <h1>Account Manager</h1>
 <div class="list">
-
+    <div class="container">
+        <a href="/webui/user_op?op=AddUser"><button>add user</button></a>
+        <a href="/webui/user_op?op=DeleteUser"><button>delete user</button></a>
+        <a href="/webui/user_op?op=UpdateUser"><button>update user</button></a>
+    </div>
 
 </div>
 

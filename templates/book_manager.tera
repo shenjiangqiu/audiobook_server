@@ -1,9 +1,80 @@
 {%extends "manager_base.tera"%}
 {%block admin_content%}
 <h1>Book Manager</h1>
-<div class="list">
-
+<h2 id="current_dir"></h2>
+<div id="nav_row">
+    <button onclick="change_dir('..')">Up</button>
+    <button onclick="select_current()">Select Current</button>
 </div>
 
+<div id="file_list" class="container"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    current_dir = "{{current_dir}}"
+    console.log(current_dir)
+    function change_dir(file_name) {
+        if (file_name == "..") {
+            current_dir = current_dir.split("/")
+            current_dir.pop()
+            current_dir = current_dir.join("/")
+        } else {
+            current_dir = current_dir + "/" + file_name
+        }
+        listfile(current_dir)
+    }
+    function select(dir) {
+        console.log(`select ${dir}`)
+        $("#file_list").html("")
+        $("#nav_row").html("")
+        var html = "<form action='/management/selectpath' method='post'>\
+            <input type='hidden' name='path' value='" + dir + "'>\
+            <label for='name'>name</label>\
+            <input type='text' name='name' placeholder='name'>\
+            <label for='author'>author</label>\
+            <input type='text' name='author' placeholder='author'>\
+            <input type='submit' value='submit'>\
+        </form>\
+            "
+        $("#file_list").html(html)
+    }
+    function select_current() {
+        select(current_dir)
+    }
+    function listfile(dir) {
+
+        $("#current_dir").html(dir)
+        $.get(`/management/listfile?path=${dir}`, function (data, status) {
+            if (status == "success") {
+                console.log(data)
+                console.log(data.file_list)
+                console.log(status)
+                $("#file_list").html("")
+                if (data.code == 0) {
+                    for (let i = 0; i < data.file_list.length; i++) {
+                        const file = data.file_list[i];
+                        const file_type = file.file_type;
+                        const file_name = file.file_name;
+                        if (file_type == "Dir") {
+                            select_dir = current_dir + "/" + file_name
+                            $("#file_list").append(`<div class="dir"><p onclick="change_dir('${file_name}')">${file_name}</p><button onclick="select('${select_dir}')" >Select</button></div>`)
+                        } else {
+                            $("#file_list").append(`<div class="file"><p>${file_name}</p></div>`)
+                        }
+                    }
+                } else {
+                    $("#file_list").html("error")
+                }
+            } else {
+                $("#file_list").html("error")
+            }
+
+        })
+
+    }
+    $(document).ready(function () {
+        listfile(current_dir)
+    })
+
+</script>
 
 {%endblock admin_content%}
