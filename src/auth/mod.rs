@@ -1,9 +1,7 @@
-use axum::headers::ContentType;
-use axum::TypedHeader;
 use axum::{extract::State, response::IntoResponse, routing::post, Json};
 use cookie::time::Duration;
 use cookie::Cookie;
-use hyper::header::CONTENT_TYPE;
+
 use hyper::{header::LOCATION, HeaderMap, StatusCode};
 use redis::AsyncCommands;
 use sea_orm::{ActiveValue, ColumnTrait, EntityTrait, QueryFilter};

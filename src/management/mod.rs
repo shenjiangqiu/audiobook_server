@@ -2,9 +2,9 @@ use std::path::Path;
 
 use axum::{
     extract::State,
-    response::{IntoResponse, Response},
+    response::IntoResponse,
     routing::{get, post},
-    Form, Json, Router, TypedHeader,
+    Form, Json, Router,
 };
 use hyper::{header::LOCATION, StatusCode};
 
