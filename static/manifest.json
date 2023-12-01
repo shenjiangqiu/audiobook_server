@@ -1,0 +1,16 @@
+{
+    "name": "SJQAudioBookPlayer",
+    "short_name": "SJQABP",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#9b9595",
+    "description": "A simple audio book player",
+    "theme_color": "#9b9595",
+    "icons": [
+        {
+            "src": "/panda256.ico",
+            "type": "image/ico",
+            "sizes": "256x256"
+        }
+    ]
+}

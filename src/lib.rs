@@ -234,6 +234,30 @@ pub async fn app_main() -> eyre::Result<()> {
                 },
             ),
         )
+        .route(
+            "/panda256.ico",
+            get(
+                |if_last_modified: Option<TypedHeader<axum::headers::IfModifiedSince>>| async move {
+                    let text = include_bytes!("../static/panda256.ico");
+                    let text_type = TypedHeader(axum::headers::ContentType::from(
+                        Mime::from_str("image/x-icon").unwrap(),
+                    ));
+                    cached_response(if_last_modified, text_type, text.to_vec())
+                },
+            ),
+        )
+        .route(
+            "/manifest.json",
+            get(
+                |if_last_modified: Option<TypedHeader<axum::headers::IfModifiedSince>>| async move {
+                    let text = include_bytes!("../static/manifest.json");
+                    let text_type = TypedHeader(axum::headers::ContentType::from(
+                        Mime::from_str("application/json").unwrap(),
+                    ));
+                    cached_response(if_last_modified, text_type, text.to_vec())
+                },
+            ),
+        )
         .route_layer(
             CorsLayer::new()
                 .allow_methods([Method::GET, Method::POST])

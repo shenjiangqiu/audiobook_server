@@ -17,7 +17,7 @@ pub(crate) enum PasskeyCheckResult {
     NoCookie,
     NoRedis,
     /// userid, role_level
-    LogInSucceed(LoginInfo),
+    LogInSucceed((String, LoginInfo)),
 }
 #[async_trait]
 
@@ -84,7 +84,9 @@ pub(crate) async fn check_passkey(cookies: &Cookies, stats: &AppStat) -> Passkey
             let login_info: Result<LoginInfo, redis::RedisError> = redis_conn.get(passkey).await;
 
             match login_info {
-                Ok(login_info) => PasskeyCheckResult::LogInSucceed(login_info),
+                Ok(login_info) => {
+                    PasskeyCheckResult::LogInSucceed((passkey.to_string(), login_info))
+                }
                 Err(_) => {
                     debug!("passkey not found in redis");
                     PasskeyCheckResult::NoRedis
@@ -128,10 +130,15 @@ where
     match check_result {
         PasskeyCheckResult::NoCookie => (StatusCode::UNAUTHORIZED, "Not Login").into_response(),
         PasskeyCheckResult::NoRedis => (StatusCode::UNAUTHORIZED, "Redis Error").into_response(),
-        PasskeyCheckResult::LogInSucceed(login_info) => {
+        PasskeyCheckResult::LogInSucceed((_passkey, login_info)) => {
             let role_level = login_info.role_level;
             request.extensions_mut().insert(login_info);
             on_success(role_level, request).await.into_response()
         }
     }
+}
+
+pub(crate) async fn extend_login_expire_time(state: &AppStat, key: &str) {
+    let mut redis_conn = state.connections.redis.lock().await;
+    let _: Result<(), redis::RedisError> = redis_conn.expire(key, 7 * 24 * 60 * 60).await;
 }

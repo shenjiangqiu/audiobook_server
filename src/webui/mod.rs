@@ -123,7 +123,7 @@ fn logout_html(state: &AppStat) -> Response {
 
 async fn login_page(State(state): State<AppStat>, login_status: PasskeyCheckResult) -> Response {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => index_html(&state, &data).await,
+        PasskeyCheckResult::LogInSucceed((_, data)) => index_html(&state, &data).await,
         _ => login_html(&state),
     }
 }
@@ -136,7 +136,7 @@ pub(crate) async fn index_page(
     login_status: PasskeyCheckResult,
 ) -> Response {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => index_html(&state, &data).await,
+        PasskeyCheckResult::LogInSucceed((_, data)) => index_html(&state, &data).await,
         _ => login_html(&state),
     }
 }
@@ -147,7 +147,7 @@ struct Para {
 
 async fn authors_page(State(state): State<AppStat>, login_status: PasskeyCheckResult) -> Response {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             let authors = Author::find().all(&state.connections.db).await.unwrap();
             let mut context = tera::Context::new();
             context.insert("title", "sjq audiobook_server");
@@ -168,7 +168,7 @@ async fn authors_page(State(state): State<AppStat>, login_status: PasskeyCheckRe
 }
 async fn books_page(State(state): State<AppStat>, login_status: PasskeyCheckResult) -> Response {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             let books = Music::find().all(&state.connections.db).await.unwrap();
             let mut context = tera::Context::new();
             context.insert("title", "sjq audiobook_server");
@@ -193,7 +193,7 @@ async fn book_detail_page(
     login_status: PasskeyCheckResult,
 ) -> impl IntoResponse {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             let book_id = para.id;
 
             let book = Music::find_by_id(book_id)
@@ -235,7 +235,7 @@ async fn author_detail_page(
     login_status: PasskeyCheckResult,
 ) -> Response {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             let author_id = para.id;
             let author = Author::find_by_id(author_id)
                 .one(&state.connections.db)
@@ -281,7 +281,7 @@ async fn player_page(
     login_status: PasskeyCheckResult,
 ) -> impl IntoResponse {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             let book_id = para.book_id;
             let chapter_id = para.chapter_id;
 
@@ -329,7 +329,7 @@ async fn newplayer_page(
     login_status: PasskeyCheckResult,
 ) -> impl IntoResponse {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             let book_id = para.book_id;
             let chapter_id = para.chapter_id;
 
@@ -416,7 +416,7 @@ async fn manager_page(
     login_status: PasskeyCheckResult,
 ) -> impl IntoResponse {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             generate_manager_page(&data, &state.tera, "manager.tera").await
         }
         _ => login_html(&state),
@@ -428,7 +428,7 @@ async fn book_manager_page(
     login_status: PasskeyCheckResult,
 ) -> impl IntoResponse {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             generate_manager_page_with_data(
                 &data,
                 &state.tera,
@@ -449,7 +449,7 @@ async fn account_manager_page(
     login_status: PasskeyCheckResult,
 ) -> impl IntoResponse {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             generate_manager_page(&data, &state.tera, "account_manager.tera").await
         }
         _ => login_html(&state),
@@ -473,7 +473,7 @@ async fn user_op_page(
     form: Form<InputPara>,
 ) -> Response {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             let user_list = match &form.0.op {
                 UserOpData::DeleteUser | UserOpData::UpdateUser => {
                     let users = Account::find().all(&state.connections.db).await.unwrap();
@@ -505,7 +505,7 @@ async fn update_user_page(
     form: Form<UpdateUserForm>,
 ) -> Response {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             let user = Account::find_by_id(form.0.id)
                 .one(&state.connections.db)
                 .await
@@ -575,7 +575,7 @@ async fn create_user_action_page(
     form: Form<CreateUserForm>,
 ) -> Response {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             let form = form.0;
             let password = md5::compute(form.password);
             let password = format!("{:x}", password);
@@ -646,7 +646,7 @@ async fn delete_user_action_page(
     form: Form<DeleteForm>,
 ) -> Response {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             let form = form.0;
 
             let result = Account::delete_by_id(form.id)
@@ -712,7 +712,7 @@ async fn update_user_action_page(
     form: Form<UpdateActionForm>,
 ) -> Response {
     match login_status {
-        PasskeyCheckResult::LogInSucceed(data) => {
+        PasskeyCheckResult::LogInSucceed((_, data)) => {
             let form = form.0;
             let password = md5::compute(form.password);
             let password = format!("{:x}", password);

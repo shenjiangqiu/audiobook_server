@@ -4,7 +4,7 @@ use tower_cookies::Cookies;
 use tracing::debug;
 
 use crate::{
-    middleware::{check_passkey, generate_response_util},
+    middleware::{check_passkey, generate_response_util, tools, PasskeyCheckResult},
     AppStat,
 };
 
@@ -16,7 +16,15 @@ pub(crate) async fn user_auth<B>(
     debug!("user_auth");
     let cookies: &Cookies = request.extensions().get().unwrap();
     let check_result = check_passkey(cookies, &stats).await;
-    generate_response_util(request, check_result, |_, request| async move {
+    match &check_result {
+        // if login succeed, then extend the expire time
+        PasskeyCheckResult::LogInSucceed((key, _login_info)) => {
+            tools::extend_login_expire_time(&stats, &key).await;
+        }
+        _ => {}
+    };
+
+    generate_response_util(request, check_result, |_role_level, request| async move {
         debug!("user is user");
         next.run(request).await
     })
