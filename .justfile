@@ -9,4 +9,4 @@ stop:
 start:
     systemctl start --user audiobook_server.service
 debug_deploy:
-    RUST_LOG=debug cargo run -- -p 3001    
+    RUST_LOG=debug,sqlx=error,sqlx_mysql=error cargo run -- -p 3001    

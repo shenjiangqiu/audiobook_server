@@ -39,10 +39,16 @@ pub(crate) fn route(state: AppStat) -> Router<AppStat> {
         .route("/create_user_action", post(create_user_action_page))
         .route("/delete_user_action", post(delete_user_action_page))
         .route("/update_user_action", post(update_user_action_page))
-        .route_layer(axum::middleware::from_fn_with_state(
-            state,
-            super::middleware::webui_auth::webui_auth,
-        ))
+        .route_layer(
+            tower::ServiceBuilder::new()
+                .layer(axum::middleware::from_fn_with_state(
+                    state,
+                    super::middleware::webui_auth::webui_auth,
+                ))
+                .layer(axum::middleware::from_fn(
+                    super::middleware::log_system::log_sys,
+                )),
+        )
 }
 #[derive(Debug, serde::Serialize)]
 struct RecentData {

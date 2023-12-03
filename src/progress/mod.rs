@@ -21,10 +21,14 @@ pub(crate) fn route(state: AppStat) -> Router<AppStat> {
         .route("/getprogress", get(getprogress))
         .route("/setprogress", post(setprogress))
         .route_layer(
-            tower::ServiceBuilder::new().layer(axum::middleware::from_fn_with_state(
-                state,
-                super::middleware::user_auth::user_auth,
-            )),
+            tower::ServiceBuilder::new()
+                .layer(axum::middleware::from_fn_with_state(
+                    state,
+                    super::middleware::user_auth::user_auth,
+                ))
+                .layer(axum::middleware::from_fn(
+                    super::middleware::log_system::log_sys,
+                )),
         )
 }
 #[derive(Debug, serde::Deserialize)]

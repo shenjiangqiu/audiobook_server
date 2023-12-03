@@ -7,17 +7,24 @@ use axum::{
     Form, Json, Router,
 };
 use hyper::{header::LOCATION, StatusCode};
+use tower::ServiceBuilder;
 
 use crate::{tools, AppStat};
 
-pub(crate) fn route(stat: AppStat) -> Router<AppStat> {
+pub(crate) fn route(state: AppStat) -> Router<AppStat> {
     Router::new()
         .route("/listfile", get(listfile))
         .route("/selectpath", post(selectpath))
-        .route_layer(axum::middleware::from_fn_with_state(
-            stat,
-            super::middleware::admin_auth::admin_auth,
-        ))
+        .route_layer(
+            ServiceBuilder::new()
+                .layer(axum::middleware::from_fn_with_state(
+                    state,
+                    super::middleware::admin_auth::admin_auth,
+                ))
+                .layer(axum::middleware::from_fn(
+                    super::middleware::log_system::log_sys,
+                )),
+        )
 }
 #[derive(Debug, serde::Serialize, Clone)]
 enum FileType {

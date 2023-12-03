@@ -268,7 +268,7 @@ pub async fn app_main() -> eyre::Result<()> {
     {
         let addr6 = SocketAddr::new(Ipv6Addr::UNSPECIFIED.into(), cli.port);
         axum::Server::bind(&addr6)
-            .serve(app.into_make_service())
+            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
             .await
             .unwrap();
     }

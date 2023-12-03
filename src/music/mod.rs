@@ -17,10 +17,14 @@ pub(crate) fn route(state: AppStat) -> axum::Router<AppStat> {
         .route("/searchbook", get(getbooks_by_name))
         // .route("/getfile/:book/:no", get(getfile_by_id))
         .route_layer(
-            tower::ServiceBuilder::new().layer(axum::middleware::from_fn_with_state(
-                state,
-                super::middleware::user_auth::user_auth,
-            )),
+            tower::ServiceBuilder::new()
+                .layer(axum::middleware::from_fn_with_state(
+                    state,
+                    super::middleware::user_auth::user_auth,
+                ))
+                .layer(axum::middleware::from_fn(
+                    super::middleware::log_system::log_sys,
+                )),
         )
 }
 

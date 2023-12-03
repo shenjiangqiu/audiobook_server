@@ -19,6 +19,7 @@ pub(crate) async fn user_auth<B>(
     match &check_result {
         // if login succeed, then extend the expire time
         PasskeyCheckResult::LogInSucceed((key, _login_info)) => {
+            debug!("extend_login_expire_time");
             tools::extend_login_expire_time(&stats, &key).await;
         }
         _ => {}

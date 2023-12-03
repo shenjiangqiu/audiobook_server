@@ -31,10 +31,14 @@ pub(crate) fn route(state: super::AppStat) -> axum::Router<super::AppStat> {
     axum::Router::new()
         .route("/", post(create_account).get(get_account))
         .route_layer(
-            ServiceBuilder::new().layer(axum::middleware::from_fn_with_state(
-                state,
-                super::middleware::admin_auth::admin_auth,
-            )),
+            ServiceBuilder::new()
+                .layer(axum::middleware::from_fn_with_state(
+                    state,
+                    super::middleware::admin_auth::admin_auth,
+                ))
+                .layer(axum::middleware::from_fn(
+                    super::middleware::log_system::log_sys,
+                )),
         )
         .route("/login", post(login))
         .route("/logout", post(logout))

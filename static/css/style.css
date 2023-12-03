@@ -150,7 +150,11 @@ a:hover {
     background-color: rgb(88, 99, 95);
     color: aliceblue;
 }
+.dir:hover{
+    background-color: rgb(167, 44, 114);
+    color: rgb(65, 144, 212);
 
+}
 
 .max_container {
     display: flex;
